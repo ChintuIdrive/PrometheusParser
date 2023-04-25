@@ -24,8 +24,7 @@ namespace PrometheusParser
             // Read the file and split the response into lines         
 
             string[] lines = File.ReadAllLines(PromResponseFilePath).Skip(1).ToArray(); ;
-
-            
+           
             // Loop through the lines and parse the metrics
             foreach (string line in lines)
             {
@@ -36,10 +35,11 @@ namespace PrometheusParser
                 // Split the line into metric name, labels, and value
                 string[] parts = line.Split(' ');
 
-                // Extract the metric name and labels
+                // Extract the metric name 
                 string[] nameAndLabels = parts[0].Split('{');
                 string name = nameAndLabels[0];
 
+                //Extract data point(label and value )
                 DataPoint dataPoint = GetDataPoint(line);
               
                 // Add the metric to the dictionary               
