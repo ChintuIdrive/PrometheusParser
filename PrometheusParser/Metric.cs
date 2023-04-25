@@ -12,9 +12,6 @@ namespace PrometheusParser
     internal class Metric
     {
         public string Name { get; }
-        public Dictionary<string, string> Labels { get; }
-        public List<Tuple<double, long?>> Values { get; }
-
         public List<DataPoint> DataPoints { get; }
 
         public Metric(string name,DataPoint dataPoint)
@@ -27,31 +24,7 @@ namespace PrometheusParser
         {
             DataPoints.Add(dataPoint);
         }
-        public Metric(string name, Dictionary<string, string> labels, double value, long? timestamp = null)
-        {
-            Name = name;
-            Labels = labels;
-            Values = new List<Tuple<double, long?>>();
-            Add(labels, value, timestamp);
-        }
-
-        public void Add(Dictionary<string, string> labels, double value, long? timestamp = null)
-        {
-            if (LabelsEqual(labels))
-                Values.Add(new Tuple<double, long?>(value, timestamp));
-        }
-
-        private bool LabelsEqual(Dictionary<string, string> labels)
-        {
-            if (labels.Count != Labels.Count)
-                return false;
-            foreach (string key in labels.Keys)
-            {
-                if (!Labels.ContainsKey(key) || labels[key] != Labels[key])
-                    return false;
-            }
-            return true;
-        }
+       
         public override string ToString()
         {
             IEnumerable<string> labelsWithValue = GetLabelsWithValue();           
