@@ -12,18 +12,34 @@ namespace PrometheusParser
     {
         static async Task Main(string[] args)
         {
-            MetricsParser metricsParser = new MetricsParser();
+            //MetricsParser metricsParser = new MetricsParser();
             string PromResponseFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "PromResponses", "prom_response.txt");
-            metricsParser.Parse(PromResponseFilePath);
+            //metricsParser.GetRawMetrics(PromResponseFilePath);
+            //metricsParser.Parse(PromResponseFilePath);
 
-            IDictionary<string, Metric> metrics = metricsParser.GetMetrics();
+            //IDictionary<string, Metric> metrics = metricsParser.GetMetrics();
+
 
             // Print the metrics
-            foreach (Metric metric in metrics.Values)
+            //foreach (Metric metric in metrics.Values)
+            //{
+            //    Console.WriteLine(metric.ToString());
+            //}
+
+            Parser parser = new Parser();
+            parser.Load(PromResponseFilePath);
+
+            IDictionary<string, ISimpleMetric> simpleMetrics = parser.GetSimpleMerics();
+            foreach (var metric in simpleMetrics)
             {
                 Console.WriteLine(metric.ToString());
             }
 
+            IDictionary<string, IComplexMetric> complexMetrics = parser.GetComplexMerics();
+            foreach (var metric in complexMetrics)
+            {
+                Console.WriteLine(metric.ToString());
+            }
         }
     }
 }
