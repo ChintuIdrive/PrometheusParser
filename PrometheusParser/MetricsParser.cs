@@ -12,19 +12,20 @@ namespace PrometheusParser
 {
     internal class MetricsParser
     {
-        public MetricsParser() { }
-        public MetricsParser(string[] metrics) { }
-
-        public void Parse()
+        // Create a dictionary to store the metrics
+        private readonly Dictionary<string, Metric> _metrics;
+        public MetricsParser() 
         {
-            // Read the file and split the response into lines
-            string PromResponseFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "PromResponses", "prom_response.txt");
+            _metrics = new Dictionary<string, Metric>();
+        }
 
-            string response = File.ReadAllText(PromResponseFilePath);
-            string[] lines = response.Split('\n').Skip(1).ToArray();
+        public void Parse(string PromResponseFilePath)
+        {
+            // Read the file and split the response into lines         
 
-            // Create a dictionary to store the metrics
-            Dictionary<string, Metric> metrics = new Dictionary<string, Metric>();
+            string[] lines = File.ReadAllLines(PromResponseFilePath).Skip(1).ToArray(); ;
+
+            
             // Loop through the lines and parse the metrics
             foreach (string line in lines)
             {
@@ -38,22 +39,21 @@ namespace PrometheusParser
                 // Extract the metric name and labels
                 string[] nameAndLabels = parts[0].Split('{');
                 string name = nameAndLabels[0];
+
                 DataPoint dataPoint = GetDataPoint(line);
               
                 // Add the metric to the dictionary               
-                if (metrics.ContainsKey(name))
-                    metrics[name].AddDataPoint(dataPoint);
+                if (_metrics.ContainsKey(name))
+                    _metrics[name].AddDataPoint(dataPoint);
                 else
-                    metrics.Add(name, new Metric(name, dataPoint));
-            }
-
-            // Print the metrics
-            foreach (Metric metric in metrics.Values)
-            {
-                Console.WriteLine(metric.ToString());
+                    _metrics.Add(name, new Metric(name, dataPoint));
             }
         }
 
+        public IDictionary<string,Metric> GetMetrics()
+        {
+            return _metrics;
+        }
         private DataPoint GetDataPoint(string line)
         {
             Dictionary<string,string> labels = new Dictionary<string,string>();
