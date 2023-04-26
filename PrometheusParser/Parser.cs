@@ -25,13 +25,37 @@ namespace PrometheusParser
                 Parse(metrics);
             }
         }
-        public Dictionary<string, ISimpleMetric> GetSimpleMerics()
+        public IEnumerable<KeyValuePair<string, ISimpleMetric>> GetSimpleMerics()
         {
             return _simpleMetrics; 
         }
-        public Dictionary<string, IComplexMetric> GetComplexMerics()
+        public IEnumerable<KeyValuePair<string, IComplexMetric>> GetComplexMerics()
         {
             return _complexMetrics;
+        }
+        public IEnumerable<KeyValuePair<string, ISimpleMetric>> GetGaugeMetrics()
+        {
+            return _simpleMetrics.Where(x => x.Value.Type == "gauge");
+        }
+        public IEnumerable<KeyValuePair<string, ISimpleMetric>> GetCounterMetrics()
+        {
+            return _simpleMetrics.Where(x => x.Value.Type == "counter");
+        }
+        public IEnumerable<KeyValuePair<string, IComplexMetric>> GetSummaryMetrics()
+        {
+            return _complexMetrics.Where(x => x.Value.Type == "summary");
+        }
+        public IEnumerable<KeyValuePair<string, IComplexMetric>> GetHistogramMetrics()
+        {
+            return _complexMetrics.Where(x => x.Value.Type == "histogram");
+        }
+        public IComplexMetric GetComplexMetric(string metricName)
+        {
+            return _complexMetrics.SingleOrDefault(x => x.Key == metricName).Value;
+        }
+        public ISimpleMetric GetSimpleMetric(string metricName)
+        {
+            return _simpleMetrics.SingleOrDefault(x=>x.Key == metricName).Value;
         }
         private void Parse(string[] rawMetricLines)
         {

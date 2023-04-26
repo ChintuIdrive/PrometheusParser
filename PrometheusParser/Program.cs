@@ -5,6 +5,7 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using Prometheus;
 using Minio.DataModel.Replication;
+using Newtonsoft.Json;
 
 namespace PrometheusParser
 {
@@ -29,13 +30,18 @@ namespace PrometheusParser
             Parser parser = new Parser();
             parser.Load(PromResponseFilePath);
 
-            IDictionary<string, ISimpleMetric> simpleMetrics = parser.GetSimpleMerics();
+            IEnumerable<KeyValuePair<string, ISimpleMetric>> simpleMetrics = parser.GetSimpleMerics();
             foreach (var metric in simpleMetrics)
             {
+                // Serialize the metric object to a JSON string
+                string jsonString = JsonConvert.SerializeObject(metric, Formatting.Indented);
+
+                // Print the JSON string to the console
+                Console.WriteLine(jsonString);
                 Console.WriteLine(metric.ToString());
             }
 
-            IDictionary<string, IComplexMetric> complexMetrics = parser.GetComplexMerics();
+            IEnumerable<KeyValuePair<string, IComplexMetric>> complexMetrics = parser.GetComplexMerics();
             foreach (var metric in complexMetrics)
             {
                 Console.WriteLine(metric.ToString());
