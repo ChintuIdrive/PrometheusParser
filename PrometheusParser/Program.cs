@@ -27,25 +27,7 @@ namespace PrometheusParser
             //    Console.WriteLine(metric.ToString());
             //}
 
-            Parser parser = new Parser();
-            parser.Load(PromResponseFilePath);
-
-            IEnumerable<KeyValuePair<string, ISimpleMetric>> simpleMetrics = parser.GetSimpleMerics();
-            foreach (var metric in simpleMetrics)
-            {
-                // Serialize the metric object to a JSON string
-                string jsonString = JsonConvert.SerializeObject(metric, Formatting.Indented);
-
-                // Print the JSON string to the console
-                Console.WriteLine(jsonString);
-                Console.WriteLine(metric.ToString());
-            }
-
-            IEnumerable<KeyValuePair<string, IComplexMetric>> complexMetrics = parser.GetComplexMerics();
-            foreach (var metric in complexMetrics)
-            {
-                Console.WriteLine(metric.ToString());
-            }
+            PrometheusResponse prometheusResponse = new PrometheusResponse(PromResponseFilePath);          
         }
     }
 }
