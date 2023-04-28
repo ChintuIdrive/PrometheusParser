@@ -19,8 +19,8 @@ namespace PrometheusParser
             string[] lines = File.ReadAllLines(PromResponseFilePath);
             IParserHelper parserHelper = new ParserHelper();
             PrometheusResponse prometheusResponse = new PrometheusResponse(parserHelper);
-
-            foreach(var a in prometheusResponse.s3_requests_inflight_total)
+            prometheusResponse.Init(lines);
+            foreach (var a in prometheusResponse.s3_requests_inflight_total)
             {
                 Console.WriteLine(a);
             }
