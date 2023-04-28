@@ -20,9 +20,9 @@ namespace PrometheusParser
     }
     internal class PrometheusResponse
     {
-        public PrometheusResponse(string promResponseFilePath)
+        public PrometheusResponse(string[] lines)
         {
-            Init(promResponseFilePath);
+            Init(lines);
 
         }
         #region avgLoad
@@ -35,7 +35,7 @@ namespace PrometheusParser
         /// <summary>
         /// HELP go_gc_duration_seconds A summary of the pause duration of garbage collection cycles.
         /// </summary>
-        public Dictionary<double, double> go_gc_duration_seconds { get; }
+        public Dictionary<double, double> go_gc_duration_seconds { get; private set; }
 
         public double go_gc_duration_seconds_sum ;
         public int go_gc_duration_seconds_count ;
@@ -48,7 +48,7 @@ namespace PrometheusParser
         public int go_goroutines { get; private set; }
         #endregion
 
-        public Dictionary<string,float> go_info { get; }
+        public Dictionary<string,double> go_info { get; private set; }
         public double go_memstats_alloc_bytes { get; private set; }
         public double go_memstats_alloc_bytes_total { get; private set; }
         public double go_memstats_buck_hash_sys_bytes { get; private set; }
@@ -95,17 +95,17 @@ namespace PrometheusParser
         public int minio_s3_requests_rejected_timestamp_total { get; private set; }
         public Dictionary<string, int> minio_s3_requests_total { get; private set; }
         public int minio_s3_requests_waiting_total { get; private set; }
-        public Dictionary<string, int> minio_s3_time_ttfb_seconds_distribution { get; private set; }
+        public Dictionary<Tuple<string,double>, int> minio_s3_time_ttfb_seconds_distribution { get; private set; }
         public double minio_s3_traffic_received_bytes { get; private set; }
         public double minio_s3_traffic_sent_bytes { get; private set; }
         public Dictionary<string, int> minio_software_commit_info { get; private set; }
         public Dictionary<string, int> minio_software_version_info { get; private set; }
-        private void Init(string promResponseFilePath)
+        private void Init(string[] lines)
         {
             Parser parser = new Parser();
             //parser.Load(promResponseFilePath);
 
-            var rawMetrics = parser.GetRawMetrics(promResponseFilePath);
+            var rawMetrics = parser.GetRawMetrics(lines);
             foreach (var rawMetric in rawMetrics)
             {
                 //split typeLine to extract name and type
@@ -129,7 +129,25 @@ namespace PrometheusParser
                 }
                 else if(rawMetric.Count() > 3)
                 {
-                    MapMetricWithMultiLabel(name, rawMetric.Skip(2).ToArray());
+                    if (type == "summary")
+                    {
+                        MapMetricWithMultiLabel(name, rawMetric.Skip(2).SkipLast(2).ToArray());
+
+                        string sumMetricName = $"{name}_sum";                       
+                        string sumMetricLine = rawMetric.Single(x => x.Contains(sumMetricName));
+                        string sumValue = sumMetricLine.Split(' ')[1];
+                        MapSimpleMetric(sumMetricName, sumValue);
+
+                        string countMetricName = $"{name}_count";
+                        string countMetricLine = rawMetric.Single(x => x.Contains(countMetricName));
+                        string countValue = countMetricLine.Split(" ")[1];
+                        MapSimpleMetric(countMetricName, countValue);
+
+                    }
+                    else
+                    {
+                        MapMetricWithMultiLabel(name, rawMetric.Skip(2).ToArray());
+                    }               
                 }
             }
         }      
@@ -158,13 +176,22 @@ namespace PrometheusParser
            return true;
          
         }
-        private KeyValuePair<string,int> GetKeyValuePair(string metricLine)
+        private KeyValuePair<string,string> GetKeyValuePair(string metricLine,string key)
         {      
             Dictionary<string, string> labels = GetLabels(metricLine);
             string valueString = metricLine.Split(" ")[1];
-            int intValue = GetIntValue(valueString);
-            string key = labels["api"];
-            return new KeyValuePair<string, int>(key, intValue);
+            string label = labels[key];
+            return new KeyValuePair<string, string>(label, valueString);
+        }
+        private KeyValuePair<Tuple<string,double>, int> GetKeyValuePair(string metricLine, params string[] keys)
+        {
+            Dictionary<string, string> labels = GetLabels(metricLine);
+            int value = GetIntValue(metricLine.Split(" ")[1].Trim());
+            string apiLabel = labels[keys[0]];
+            string le = labels[keys[1]].Trim('"');
+            double leLabel = GetDoubleValue(le);
+
+            return new KeyValuePair<Tuple<string, double>, int>(Tuple.Create(apiLabel,leLabel), value);
         }
         private Dictionary<string, string> GetLabels(string metricLine)
         {
@@ -193,6 +220,12 @@ namespace PrometheusParser
         {
             switch (name)
             {
+                case "go_info":
+                    go_info = new Dictionary<string, double>
+                    {
+                        { labels["version"], GetDoubleValue(value) }
+                    };
+                    break;
                 case "minio_s3_requests_5xx_errors_total":
                     string key = labels["api"];
                     int intValue = GetIntValue(value);
@@ -201,7 +234,18 @@ namespace PrometheusParser
                         { key, intValue }
                     };
                     break;
-
+                case "minio_software_commit_info":
+                    minio_software_commit_info = new Dictionary<string, int>()
+                    {
+                        {labels["commit"], GetIntValue(value)}
+                    };
+                    break;
+                case "minio_software_version_info":
+                    minio_software_version_info = new Dictionary<string, int>()
+                    {
+                        { labels["version"], GetIntValue(value) }
+                    };
+                    break;
                 default:
                     break;
             }
@@ -210,20 +254,28 @@ namespace PrometheusParser
         {         
             switch (name)
             {
+                case "go_gc_duration_seconds":
+                    go_gc_duration_seconds = new Dictionary<double, double>();
+                    foreach (var rawMetric in rawMetrics)
+                    {
+                        KeyValuePair<string, string> keyValuePair = GetKeyValuePair(rawMetric, "quantile");
+                        double key = GetDoubleValue(keyValuePair.Key.Trim('"'));
+                        double value = GetDoubleValue(keyValuePair.Value);
+                        if (!go_gc_duration_seconds.ContainsKey(key))
+                        {
+                            go_gc_duration_seconds.Add(key, value);
+                        }
+                    }
+                    break;
                 case "minio_s3_requests_4xx_errors_total":
                     minio_s3_requests_4xx_errors_total = new Dictionary<string, int>();
                     foreach (var rawMetric in rawMetrics)
                     {
-                        //string valueString = rawMetric.Split(" ")[1];
-                        //Dictionary<string, string> labels = GetLabels(rawMetric);
-                        //int intValue = GetIntValue(valueString);
-                        //string key = labels["api"];
-
-                        KeyValuePair<string, int> keyValuePair = GetKeyValuePair(rawMetric);
+                        KeyValuePair<string, string> keyValuePair = GetKeyValuePair(rawMetric,"api");
 
                         if (!minio_s3_requests_4xx_errors_total.ContainsKey(keyValuePair.Key))
                         {
-                            minio_s3_requests_4xx_errors_total.Add(keyValuePair.Key,keyValuePair.Value);
+                            minio_s3_requests_4xx_errors_total.Add(keyValuePair.Key,GetIntValue(keyValuePair.Value));
                         }                       
                     }
                     break;
@@ -231,11 +283,11 @@ namespace PrometheusParser
                     minio_s3_requests_canceled_total = new Dictionary<string, int> ();
                     foreach (var rawMetric in rawMetrics)
                     {
-                        KeyValuePair<string, int> keyValuePair = GetKeyValuePair(rawMetric);
+                        KeyValuePair<string, string> keyValuePair = GetKeyValuePair(rawMetric,"api");
 
                         if (!minio_s3_requests_canceled_total.ContainsKey(keyValuePair.Key))
                         {
-                            minio_s3_requests_canceled_total.Add(keyValuePair.Key, keyValuePair.Value);
+                            minio_s3_requests_canceled_total.Add(keyValuePair.Key, GetIntValue(keyValuePair.Value));
                         }
                     }                   
                     break;
@@ -243,11 +295,11 @@ namespace PrometheusParser
                     minio_s3_requests_errors_total = new Dictionary<string, int>();
                     foreach (var rawMetric in rawMetrics)
                     {
-                        KeyValuePair<string, int> keyValuePair = GetKeyValuePair(rawMetric);
+                        KeyValuePair<string, string> keyValuePair = GetKeyValuePair(rawMetric, "api");
 
                         if (!minio_s3_requests_errors_total.ContainsKey(keyValuePair.Key))
                         {
-                            minio_s3_requests_errors_total.Add(keyValuePair.Key, keyValuePair.Value);
+                            minio_s3_requests_errors_total.Add(keyValuePair.Key, GetIntValue(keyValuePair.Value));
                         }
                     }
                     break;
@@ -255,11 +307,34 @@ namespace PrometheusParser
                     minio_s3_requests_inflight_total = new Dictionary<string, int>();
                     foreach (var rawMetric in rawMetrics)
                     {
-                        KeyValuePair<string, int> keyValuePair = GetKeyValuePair(rawMetric);
+                        KeyValuePair<string, string> keyValuePair = GetKeyValuePair(rawMetric, "api");
 
                         if (!minio_s3_requests_inflight_total.ContainsKey(keyValuePair.Key))
                         {
-                            minio_s3_requests_inflight_total.Add(keyValuePair.Key, keyValuePair.Value);
+                            minio_s3_requests_inflight_total.Add(keyValuePair.Key, GetIntValue(keyValuePair.Value));
+                        }
+                    }
+                    break;
+                case "minio_s3_requests_total":
+                    minio_s3_requests_total=new Dictionary<string, int>();
+                    foreach (var rawMetric in rawMetrics)
+                    {
+                        KeyValuePair<string, string> keyValuePair = GetKeyValuePair(rawMetric, "api");
+
+                        if (!minio_s3_requests_total.ContainsKey(keyValuePair.Key))
+                        {
+                            minio_s3_requests_total.Add(keyValuePair.Key, GetIntValue(keyValuePair.Value));
+                        }
+                    }
+                    break;
+                case "minio_s3_time_ttfb_seconds_distribution":
+                    minio_s3_time_ttfb_seconds_distribution = new Dictionary<Tuple<string, double>, int>();
+                    foreach (var rawMetric in rawMetrics)
+                    {
+                        KeyValuePair<Tuple<string, double>, int> keyValuePair = GetKeyValuePair(rawMetric,"api", "le");
+                        if (!minio_s3_time_ttfb_seconds_distribution.ContainsKey(keyValuePair.Key))
+                        {
+                            minio_s3_time_ttfb_seconds_distribution.Add(keyValuePair.Key, keyValuePair.Value);
                         }
                     }
                     break;
@@ -270,19 +345,19 @@ namespace PrometheusParser
             }
         }
         internal void MapSimpleMetric(string name, string value)
-        {
-            
+        {            
             if (!string.IsNullOrEmpty(value))
             {
                 switch (name)
                 {
+                    case "go_gc_duration_seconds_sum":
+                        go_gc_duration_seconds_sum=GetDoubleValue(value);
+                        break;
+                    case "go_gc_duration_seconds_count":
+                        go_gc_duration_seconds_count=GetIntValue(value);
+                        break;
                     case "go_goroutines":
-
-                        if(int.TryParse(value, out int intValue))
-                        {
-                            go_goroutines = intValue;
-                        }  
-                        
+                        go_goroutines = GetIntValue(value);                      
                         break;
                     case "go_memstats_alloc_bytes":
                         go_memstats_alloc_bytes = GetDoubleValue(value);                        
@@ -386,6 +461,27 @@ namespace PrometheusParser
                     case "minio_s3_requests_incoming_total":
                         minio_s3_requests_incoming_total=GetIntValue(value) ;
                         break;
+                    case "minio_s3_requests_rejected_auth_total":
+                        minio_s3_requests_rejected_auth_total=GetIntValue(value) ;
+                        break;
+                    case "minio_s3_requests_rejected_header_total":
+                        minio_s3_requests_rejected_header_total=GetIntValue(value) ;
+                        break;
+                    case "minio_s3_requests_rejected_invalid_total":
+                        minio_s3_requests_rejected_invalid_total=GetIntValue(value) ;
+                        break;
+                    case "minio_s3_requests_rejected_timestamp_total":
+                        minio_s3_requests_rejected_timestamp_total=GetIntValue(value) ;
+                        break;
+                    case "minio_s3_requests_waiting_total":
+                        minio_s3_requests_waiting_total=GetIntValue(value) ;
+                        break;
+                    case "minio_s3_traffic_received_bytes":
+                        minio_s3_traffic_received_bytes=GetDoubleValue(value) ;
+                        break;
+                    case "minio_s3_traffic_sent_bytes":
+                        minio_s3_traffic_sent_bytes=GetDoubleValue(value) ;
+                        break;
                     // more cases can be added here
                     default:
                         // Code to execute if expression doesn't match any case
@@ -400,7 +496,7 @@ namespace PrometheusParser
             {
                 return doubleValue;
             }
-            return double.MaxValue;
+            return double.MinValue;
         }
         private int GetIntValue(string value)
         {

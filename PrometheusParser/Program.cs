@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Prometheus;
 using Minio.DataModel.Replication;
 using Newtonsoft.Json;
+using System.Diagnostics.Metrics;
 
 namespace PrometheusParser
 {
@@ -26,8 +27,13 @@ namespace PrometheusParser
             //{
             //    Console.WriteLine(metric.ToString());
             //}
-
-            PrometheusResponse prometheusResponse = new PrometheusResponse(PromResponseFilePath);          
+            string[] lines = File.ReadAllLines(PromResponseFilePath);
+            PrometheusResponse prometheusResponse = new PrometheusResponse(lines);
+            foreach(var a in prometheusResponse.minio_s3_requests_inflight_total)
+            {
+                Console.WriteLine(a);
+            }
+            
         }
     }
 }

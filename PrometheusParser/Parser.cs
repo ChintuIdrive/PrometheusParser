@@ -17,9 +17,9 @@ namespace PrometheusParser
             _simpleMetrics = new Dictionary<string, ISimpleMetric>();
             _complexMetrics= new Dictionary<string, IComplexMetric>();
         }
-        public void Load(string PromResponseFilePath)
+        public void Load(string[] lines)
         {
-            List<string[]> rawMetrics = GetRawMetrics(PromResponseFilePath);
+            List<string[]> rawMetrics = GetRawMetrics(lines);
             foreach (string[] metrics in rawMetrics)
             {
                 Parse(metrics);
@@ -101,11 +101,11 @@ namespace PrometheusParser
             }
             
         }
-        public List<string[]> GetRawMetrics(string PromResponseFilePath)
+        public List<string[]> GetRawMetrics(string[] lines)
         {
             List<string[]> rawMetrics = new List<string[]>();
             // Read the file and split the response into lines         
-            string[] lines = File.ReadAllLines(PromResponseFilePath).Skip(1).ToArray();
+            lines = lines.Skip(1).ToArray();
 
             // Loop through the lines and parse the metrics
             int commentCounter = 0;
