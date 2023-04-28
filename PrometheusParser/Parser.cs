@@ -101,7 +101,7 @@ namespace PrometheusParser
             }
             
         }
-        private List<string[]> GetRawMetrics(string PromResponseFilePath)
+        public List<string[]> GetRawMetrics(string PromResponseFilePath)
         {
             List<string[]> rawMetrics = new List<string[]>();
             // Read the file and split the response into lines         
