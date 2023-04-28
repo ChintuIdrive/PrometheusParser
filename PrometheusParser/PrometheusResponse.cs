@@ -13,12 +13,12 @@ using System.Threading.Tasks;
 
 namespace PrometheusParser
 {
-    internal class PrometheusResponse
+    internal class PrometheusResponse: IPrometheusResponse
     {
-        public PrometheusResponse(string[] lines)
+        private readonly IParserHelper _parserHelper;
+        public PrometheusResponse(IParserHelper parserHelper)
         {
-            Init(lines);
-            InitAvgLoad();
+            _parserHelper= parserHelper;
         }
         #region avgLoad
         double avgLoad1;
@@ -94,12 +94,12 @@ namespace PrometheusParser
         public double s3_traffic_sent_bytes { get; private set; }
         public Dictionary<string, int> software_commit_info { get; private set; }
         public Dictionary<string, int> software_version_info { get; private set; }
-        private void Init(string[] lines)
+        public void Init(string[] lines)
         {
-            Parser parser = new Parser();
-            //parser.Load(promResponseFilePath);
-
-            var rawMetrics = parser.GetRawMetrics(lines);
+            //initialize avg loads
+            InitAvgLoad();
+            //parse prometheus response
+            IEnumerable<string[]> rawMetrics = _parserHelper.GetRawMetrics(lines);
             foreach (var rawMetric in rawMetrics)
             {
                 //split typeLine to extract name and type

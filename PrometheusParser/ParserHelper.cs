@@ -7,9 +7,9 @@ using System.Threading.Tasks;
 
 namespace PrometheusParser
 {
-    internal class Parser
+    internal class ParserHelper : IParserHelper
     {
-        public List<string[]> GetRawMetrics(string[] lines)
+        public IEnumerable<string[]> GetRawMetrics(string[] lines)
         {
             List<string[]> rawMetrics = new List<string[]>();
             // Read the file and split the response into lines         

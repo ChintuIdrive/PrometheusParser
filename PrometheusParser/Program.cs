@@ -17,7 +17,9 @@ namespace PrometheusParser
             string PromResponseFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "PromResponses", "prom_response.txt");
            
             string[] lines = File.ReadAllLines(PromResponseFilePath);
-            PrometheusResponse prometheusResponse = new PrometheusResponse(lines);
+            IParserHelper parserHelper = new ParserHelper();
+            PrometheusResponse prometheusResponse = new PrometheusResponse(parserHelper);
+
             foreach(var a in prometheusResponse.s3_requests_inflight_total)
             {
                 Console.WriteLine(a);
