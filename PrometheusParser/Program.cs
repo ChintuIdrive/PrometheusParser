@@ -5,6 +5,7 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using Prometheus;
 using Minio.DataModel.Replication;
+using Newtonsoft.Json;
 
 namespace PrometheusParser
 {
@@ -12,18 +13,21 @@ namespace PrometheusParser
     {
         static async Task Main(string[] args)
         {
-            MetricsParser metricsParser = new MetricsParser();
+            //MetricsParser metricsParser = new MetricsParser();
             string PromResponseFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "PromResponses", "prom_response.txt");
-            metricsParser.Parse(PromResponseFilePath);
+            //metricsParser.GetRawMetrics(PromResponseFilePath);
+            //metricsParser.Parse(PromResponseFilePath);
 
-            IDictionary<string, Metric> metrics = metricsParser.GetMetrics();
+            //IDictionary<string, Metric> metrics = metricsParser.GetMetrics();
+
 
             // Print the metrics
-            foreach (Metric metric in metrics.Values)
-            {
-                Console.WriteLine(metric.ToString());
-            }
+            //foreach (Metric metric in metrics.Values)
+            //{
+            //    Console.WriteLine(metric.ToString());
+            //}
 
+            PrometheusResponse prometheusResponse = new PrometheusResponse(PromResponseFilePath);          
         }
     }
 }
