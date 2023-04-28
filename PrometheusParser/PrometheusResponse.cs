@@ -2,6 +2,7 @@
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reactive.Joins;
@@ -17,12 +18,12 @@ namespace PrometheusParser
         public PrometheusResponse(string[] lines)
         {
             Init(lines);
-
+            InitAvgLoad();
         }
         #region avgLoad
-        int avgLoad5;
-        int avgLoad10;
-        int avgLoad15;
+        double avgLoad1;
+        double avgLoad5;
+        double avgLoad15;
         #endregion
 
         #region TYPE go_gc_duration_seconds summary
@@ -498,6 +499,39 @@ namespace PrometheusParser
                 return intValue;
             }
             return int.MinValue;
+        }
+
+        private void InitAvgLoad()
+        {
+            // Get the current system load average 
+            string averageLoadCommand = "uptime | awk -F 'load average: ' '{print $2}'";
+            // create a new process
+            Process process = new Process();
+            // specify the bash executable as the process to start
+            process.StartInfo.FileName = "/bin/bash";
+            process.StartInfo.Arguments = $"-c \"{averageLoadCommand}\"";
+            //process.StartInfo.UseShellExecute = false;
+            //process.StartInfo.RedirectStandardOutput = true;
+
+            process.StartInfo.RedirectStandardError = true;
+            process.StartInfo.RedirectStandardOutput = true;
+            process.StartInfo.UseShellExecute = false;
+            process.StartInfo.CreateNoWindow = true;
+            //process.StartInfo.WorkingDirectory = "/home/chintu/BatchesIn10K/";
+
+            process.Start();
+            process.WaitForExit();
+
+            if (process.ExitCode != 0)
+            {
+                Console.WriteLine($"Command failed with exit code {process.ExitCode}: {averageLoadCommand}");
+            }
+            string output= process.StandardOutput.ReadToEnd();
+            string[] avgLoads = output.Trim().Split(',');
+            avgLoad1 = GetDoubleValue(avgLoads[0].Trim());
+            avgLoad5 = GetDoubleValue(avgLoads[1].Trim());
+            avgLoad15= GetDoubleValue(avgLoads[2].Trim());
+
         }
     }
 }
