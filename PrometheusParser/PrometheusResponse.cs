@@ -1,29 +1,24 @@
-﻿using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Linq.Expressions;
-using System.Reactive.Joins;
-using System.Reflection.Emit;
-using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 
 namespace PrometheusParser
 {
-    internal class PrometheusResponse: IPrometheusResponse
+    public class PrometheusResponse : IPrometheusResponse
     {
         private readonly IParserHelper _parserHelper;
         public PrometheusResponse(IParserHelper parserHelper)
         {
-            _parserHelper= parserHelper;
+            _parserHelper = parserHelper;
         }
         #region avgLoad
-        double avgLoad1;
-        double avgLoad5;
-        double avgLoad15;
+
+        public double avgLoad1 { get; set; }
+        public double avgLoad5 { get; set; }
+        public double avgLoad15 { get; set; }
+
         #endregion
 
         #region TYPE go_gc_duration_seconds summary
@@ -32,8 +27,8 @@ namespace PrometheusParser
         /// </summary>
         public Dictionary<double, double> go_gc_duration_seconds { get; private set; }
 
-        public double go_gc_duration_seconds_sum ;
-        public int go_gc_duration_seconds_count ;
+        public double go_gc_duration_seconds_sum;
+        public int go_gc_duration_seconds_count;
         #endregion
 
         #region TYPE go_goroutines gauge
@@ -43,7 +38,7 @@ namespace PrometheusParser
         public int go_goroutines { get; private set; }
         #endregion
 
-        public Dictionary<string,double> go_info { get; private set; }
+        public Dictionary<string, double> go_info { get; private set; }
         public double go_memstats_alloc_bytes { get; private set; }
         public double go_memstats_alloc_bytes_total { get; private set; }
         public double go_memstats_buck_hash_sys_bytes { get; private set; }
@@ -53,7 +48,7 @@ namespace PrometheusParser
         public double go_memstats_heap_idle_bytes { get; private set; }
         public double go_memstats_heap_inuse_bytes { get; private set; }
         public int go_memstats_heap_objects { get; private set; }
-        public double go_memstats_heap_released_bytes { get; private set;}
+        public double go_memstats_heap_released_bytes { get; private set; }
         public double go_memstats_heap_sys_bytes { get; private set; }
         public double go_memstats_last_gc_time_seconds { get; private set; }
         public double go_memstats_lookups_total { get; private set; }
@@ -89,7 +84,7 @@ namespace PrometheusParser
         public int s3_requests_rejected_timestamp_total { get; private set; }
         public Dictionary<string, int> s3_requests_total { get; private set; }
         public int s3_requests_waiting_total { get; private set; }
-        public Dictionary<Tuple<string,double>, int> s3_time_ttfb_seconds_distribution { get; private set; }
+        public Dictionary<string, int> s3_time_ttfb_seconds_distribution { get; private set; }
         public double s3_traffic_received_bytes { get; private set; }
         public double s3_traffic_sent_bytes { get; private set; }
         public Dictionary<string, int> software_commit_info { get; private set; }
@@ -109,7 +104,7 @@ namespace PrometheusParser
                 string type = parts[3];
                 if (rawMetric.Count() == 3)
                 {
-                    string metricLine= rawMetric[2];
+                    string metricLine = rawMetric[2];
                     string value = metricLine.Split(' ')[1];
                     if (IsSimpleMetric(metricLine, out Dictionary<string, string> labels))
                     {
@@ -118,16 +113,16 @@ namespace PrometheusParser
                     else
                     {
                         labels.Remove("server");
-                        MapMetricWithLael(name, value,labels);
+                        MapMetricWithLael(name, value, labels);
                     }
                 }
-                else if(rawMetric.Count() > 3)
+                else if (rawMetric.Count() > 3)
                 {
                     if (type == "summary")
                     {
                         MapMetricWithMultiLabel(name, rawMetric.Skip(2).SkipLast(2).ToArray());
 
-                        string sumMetricName = $"{name}_sum";                       
+                        string sumMetricName = $"{name}_sum";
                         string sumMetricLine = rawMetric.Single(x => x.Contains(sumMetricName));
                         string sumValue = sumMetricLine.Split(' ')[1];
                         MapSimpleMetric(sumMetricName, sumValue);
@@ -141,10 +136,10 @@ namespace PrometheusParser
                     else
                     {
                         MapMetricWithMultiLabel(name, rawMetric.Skip(2).ToArray());
-                    }               
+                    }
                 }
             }
-        }      
+        }
         private bool IsSimpleMetric(string metricLine, out Dictionary<string, string> labels)
         {
             labels = new Dictionary<string, string>();
@@ -156,10 +151,10 @@ namespace PrometheusParser
             if (match.Success)
             {
                 string result = match.Groups[1].Value;
-                string[] rawlabels = result.Split(",");
+                string[] rawlabels = result.Split(",").Select(s => s.Trim('"')).ToArray();
                 foreach (string label in rawlabels)
                 {
-                    string[] labelData = label.Split("=");
+                    string[] labelData = label.Split("=").Select(s => s.Trim('"')).ToArray();
                     if (!labels.ContainsKey(label))
                     {
                         labels.Add(labelData[0], labelData[1]);
@@ -167,29 +162,29 @@ namespace PrometheusParser
                 }
                 return labels.Count() == 1 && labels.ContainsKey("server");
             }
-           return true;
-         
+            return true;
+
         }
-        private KeyValuePair<string,string> GetKeyValuePair(string metricLine,string key)
-        {      
+        private KeyValuePair<string, string> GetKeyValuePair(string metricLine, string key)
+        {
             Dictionary<string, string> labels = GetLabels(metricLine);
             string valueString = metricLine.Split(" ")[1];
             string label = labels[key];
             return new KeyValuePair<string, string>(label, valueString);
         }
-        private KeyValuePair<Tuple<string,double>, int> GetKeyValuePair(string metricLine, params string[] keys)
+        private KeyValuePair<string, int> GetKeyValuePair(string metricLine, params string[] keys)
         {
             Dictionary<string, string> labels = GetLabels(metricLine);
             int value = GetIntValue(metricLine.Split(" ")[1].Trim());
             string apiLabel = labels[keys[0]];
-            string le = labels[keys[1]].Trim('"');
+            string le = labels[keys[1]];
             double leLabel = GetDoubleValue(le);
 
-            return new KeyValuePair<Tuple<string, double>, int>(Tuple.Create(apiLabel,leLabel), value);
+            return new KeyValuePair<string, int>(apiLabel + ":" + leLabel, value);
         }
         private Dictionary<string, string> GetLabels(string metricLine)
         {
-            Dictionary<string, string>  labels = new Dictionary<string, string>();           
+            Dictionary<string, string> labels = new Dictionary<string, string>();
             string[] parts = metricLine.Split(' ');
             string value = parts[1];
             string pattern = @"\{([^}]*)\}";
@@ -197,11 +192,11 @@ namespace PrometheusParser
             if (match.Success)
             {
                 string result = match.Groups[1].Value;
-                string[] rawlabels = result.Split(",");
+                string[] rawlabels = result.Split(",").Select(s => s.Trim('"')).ToArray();
 
                 foreach (string label in rawlabels)
                 {
-                    string[] labelData = label.Split("=");
+                    string[] labelData = label.Split("=").Select(s => s.Trim('"')).ToArray();
                     if (!labels.ContainsKey(label))
                     {
                         labels.Add(labelData[0], labelData[1]);
@@ -210,7 +205,7 @@ namespace PrometheusParser
             }
             return labels;
         }
-        void MapMetricWithLael(string name,string value, Dictionary<string, string> labels)
+        void MapMetricWithLael(string name, string value, Dictionary<string, string> labels)
         {
             switch (name)
             {
@@ -221,10 +216,10 @@ namespace PrometheusParser
                     };
                     break;
                 case "minio_s3_requests_5xx_errors_total":
-                    string key = labels["api"];
+                    string key = labels["api"].Trim('"');
                     int intValue = GetIntValue(value);
-                    s3_requests_5xx_errors_total = new Dictionary<string, int>() 
-                    { 
+                    s3_requests_5xx_errors_total = new Dictionary<string, int>()
+                    {
                         { key, intValue }
                     };
                     break;
@@ -245,7 +240,7 @@ namespace PrometheusParser
             }
         }
         void MapMetricWithMultiLabel(string name, string[] rawMetrics)
-        {         
+        {
             switch (name)
             {
                 case "go_gc_duration_seconds":
@@ -265,25 +260,25 @@ namespace PrometheusParser
                     s3_requests_4xx_errors_total = new Dictionary<string, int>();
                     foreach (var rawMetric in rawMetrics)
                     {
-                        KeyValuePair<string, string> keyValuePair = GetKeyValuePair(rawMetric,"api");
+                        KeyValuePair<string, string> keyValuePair = GetKeyValuePair(rawMetric, "api");
 
                         if (!s3_requests_4xx_errors_total.ContainsKey(keyValuePair.Key))
                         {
-                            s3_requests_4xx_errors_total.Add(keyValuePair.Key,GetIntValue(keyValuePair.Value));
-                        }                       
+                            s3_requests_4xx_errors_total.Add(keyValuePair.Key, GetIntValue(keyValuePair.Value));
+                        }
                     }
                     break;
                 case "minio_s3_requests_canceled_total":
-                    s3_requests_canceled_total = new Dictionary<string, int> ();
+                    s3_requests_canceled_total = new Dictionary<string, int>();
                     foreach (var rawMetric in rawMetrics)
                     {
-                        KeyValuePair<string, string> keyValuePair = GetKeyValuePair(rawMetric,"api");
+                        KeyValuePair<string, string> keyValuePair = GetKeyValuePair(rawMetric, "api");
 
                         if (!s3_requests_canceled_total.ContainsKey(keyValuePair.Key))
                         {
                             s3_requests_canceled_total.Add(keyValuePair.Key, GetIntValue(keyValuePair.Value));
                         }
-                    }                   
+                    }
                     break;
                 case "minio_s3_requests_errors_total":
                     s3_requests_errors_total = new Dictionary<string, int>();
@@ -310,7 +305,7 @@ namespace PrometheusParser
                     }
                     break;
                 case "minio_s3_requests_total":
-                    s3_requests_total=new Dictionary<string, int>();
+                    s3_requests_total = new Dictionary<string, int>();
                     foreach (var rawMetric in rawMetrics)
                     {
                         KeyValuePair<string, string> keyValuePair = GetKeyValuePair(rawMetric, "api");
@@ -322,10 +317,10 @@ namespace PrometheusParser
                     }
                     break;
                 case "minio_s3_time_ttfb_seconds_distribution":
-                    s3_time_ttfb_seconds_distribution = new Dictionary<Tuple<string, double>, int>();
+                    s3_time_ttfb_seconds_distribution = new Dictionary<string, int>();
                     foreach (var rawMetric in rawMetrics)
                     {
-                        KeyValuePair<Tuple<string, double>, int> keyValuePair = GetKeyValuePair(rawMetric,"api", "le");
+                        KeyValuePair<string, int> keyValuePair = GetKeyValuePair(rawMetric, "api", "le");
                         if (!s3_time_ttfb_seconds_distribution.ContainsKey(keyValuePair.Key))
                         {
                             s3_time_ttfb_seconds_distribution.Add(keyValuePair.Key, keyValuePair.Value);
@@ -339,142 +334,142 @@ namespace PrometheusParser
             }
         }
         internal void MapSimpleMetric(string name, string value)
-        {            
+        {
             if (!string.IsNullOrEmpty(value))
             {
                 switch (name)
                 {
                     case "go_gc_duration_seconds_sum":
-                        go_gc_duration_seconds_sum=GetDoubleValue(value);
+                        go_gc_duration_seconds_sum = GetDoubleValue(value);
                         break;
                     case "go_gc_duration_seconds_count":
-                        go_gc_duration_seconds_count=GetIntValue(value);
+                        go_gc_duration_seconds_count = GetIntValue(value);
                         break;
                     case "go_goroutines":
-                        go_goroutines = GetIntValue(value);                      
+                        go_goroutines = GetIntValue(value);
                         break;
                     case "go_memstats_alloc_bytes":
-                        go_memstats_alloc_bytes = GetDoubleValue(value);                        
+                        go_memstats_alloc_bytes = GetDoubleValue(value);
                         break;
                     case "go_memstats_alloc_bytes_total":
-                        go_memstats_alloc_bytes_total= GetDoubleValue(value);
+                        go_memstats_alloc_bytes_total = GetDoubleValue(value);
                         break;
                     case "go_memstats_buck_hash_sys_bytes":
                         go_memstats_buck_hash_sys_bytes = GetDoubleValue(value);
                         break;
                     case "go_memstats_frees_total":
-                        go_memstats_frees_total= GetDoubleValue(value);
+                        go_memstats_frees_total = GetDoubleValue(value);
                         break;
                     case "go_memstats_gc_sys_bytes":
-                        go_memstats_gc_sys_bytes= GetDoubleValue(value);
+                        go_memstats_gc_sys_bytes = GetDoubleValue(value);
                         break;
                     case "go_memstats_heap_alloc_bytes":
-                        go_memstats_heap_alloc_bytes= GetDoubleValue(value);
+                        go_memstats_heap_alloc_bytes = GetDoubleValue(value);
                         break;
                     case "go_memstats_heap_idle_bytes":
-                        go_memstats_heap_idle_bytes= GetDoubleValue(value);
+                        go_memstats_heap_idle_bytes = GetDoubleValue(value);
                         break;
                     case "go_memstats_heap_inuse_bytes":
-                        go_memstats_heap_inuse_bytes= GetDoubleValue(value);
+                        go_memstats_heap_inuse_bytes = GetDoubleValue(value);
                         break;
                     case "go_memstats_heap_objects":
-                        go_memstats_heap_objects= GetIntValue(value);
+                        go_memstats_heap_objects = GetIntValue(value);
                         break;
                     case "go_memstats_heap_released_bytes":
-                        go_memstats_heap_released_bytes= GetDoubleValue(value) ;
+                        go_memstats_heap_released_bytes = GetDoubleValue(value);
                         break;
                     case "go_memstats_heap_sys_bytes":
-                        go_memstats_heap_sys_bytes=GetDoubleValue(value) ;
+                        go_memstats_heap_sys_bytes = GetDoubleValue(value);
                         break;
                     case "go_memstats_last_gc_time_seconds":
-                        go_memstats_last_gc_time_seconds= GetDoubleValue(value) ;
+                        go_memstats_last_gc_time_seconds = GetDoubleValue(value);
                         break;
                     case "go_memstats_lookups_total":
-                        go_memstats_lookups_total= GetDoubleValue(value) ;
+                        go_memstats_lookups_total = GetDoubleValue(value);
                         break;
                     case "go_memstats_mallocs_total":
-                        go_memstats_mallocs_total= GetDoubleValue(value) ;
+                        go_memstats_mallocs_total = GetDoubleValue(value);
                         break;
-                        case "go_memstats_mcache_inuse_bytes":
-                        go_memstats_mcache_inuse_bytes=GetIntValue(value) ;
+                    case "go_memstats_mcache_inuse_bytes":
+                        go_memstats_mcache_inuse_bytes = GetIntValue(value);
                         break;
                     case "go_memstats_mcache_sys_bytes":
-                        go_memstats_mcache_sys_bytes=GetIntValue(value) ;
+                        go_memstats_mcache_sys_bytes = GetIntValue(value);
                         break;
                     case "go_memstats_mspan_inuse_bytes":
-                        go_memstats_mspan_inuse_bytes=GetDoubleValue(value) ;
+                        go_memstats_mspan_inuse_bytes = GetDoubleValue(value);
                         break;
                     case "go_memstats_mspan_sys_bytes":
-                        go_memstats_mspan_sys_bytes= GetDoubleValue(value) ;
+                        go_memstats_mspan_sys_bytes = GetDoubleValue(value);
                         break;
                     case "go_memstats_next_gc_bytes":
-                        go_memstats_next_gc_bytes = GetDoubleValue(value) ;
+                        go_memstats_next_gc_bytes = GetDoubleValue(value);
                         break;
                     case "go_memstats_other_sys_bytes":
                         go_memstats_other_sys_bytes = GetDoubleValue(value);
                         break;
                     case "go_memstats_stack_inuse_bytes":
-                        go_memstats_stack_inuse_bytes= GetDoubleValue(value) ;
+                        go_memstats_stack_inuse_bytes = GetDoubleValue(value);
                         break;
                     case "go_memstats_stack_sys_bytes":
-                        go_memstats_stack_sys_bytes=GetDoubleValue(value) ;
+                        go_memstats_stack_sys_bytes = GetDoubleValue(value);
                         break;
                     case "go_memstats_sys_bytes":
                         go_memstats_sys_bytes = GetDoubleValue(value);
                         break;
                     case "go_threads":
-                        go_threads=GetIntValue(value) ;
+                        go_threads = GetIntValue(value);
                         break;
                     case "minio_cluster_nodes_offline_total":
-                        cluster_nodes_offline_total=GetIntValue(value) ;
+                        cluster_nodes_offline_total = GetIntValue(value);
                         break;
                     case "minio_cluster_nodes_online_total":
-                        cluster_nodes_online_total=GetIntValue(value) ;
+                        cluster_nodes_online_total = GetIntValue(value);
                         break;
                     case "minio_process_cpu_seconds_total":
-                        process_cpu_seconds_total=GetDoubleValue(value) ;
+                        process_cpu_seconds_total = GetDoubleValue(value);
                         break;
                     case "minio_process_max_fds":
-                        process_max_fds=GetIntValue(value) ;
+                        process_max_fds = GetIntValue(value);
                         break;
                     case "minio_process_open_fds":
-                        process_open_fds=GetIntValue(value) ;
+                        process_open_fds = GetIntValue(value);
                         break;
                     case "minio_process_resident_memory_bytes":
                         process_resident_memory_bytes = GetDoubleValue(value);
                         break;
                     case "minio_process_start_time_seconds":
-                        process_start_time_seconds=GetDoubleValue(value) ;
+                        process_start_time_seconds = GetDoubleValue(value);
                         break;
                     case "minio_process_virtual_memory_bytes":
-                        process_virtual_memory_bytes=GetDoubleValue(value) ;
+                        process_virtual_memory_bytes = GetDoubleValue(value);
                         break;
                     case "minio_process_virtual_memory_max_bytes":
-                        process_virtual_memory_max_bytes=GetDoubleValue(value) ;
+                        process_virtual_memory_max_bytes = GetDoubleValue(value);
                         break;
                     case "minio_s3_requests_incoming_total":
-                        s3_requests_incoming_total=GetIntValue(value) ;
+                        s3_requests_incoming_total = GetIntValue(value);
                         break;
                     case "minio_s3_requests_rejected_auth_total":
-                        s3_requests_rejected_auth_total=GetIntValue(value) ;
+                        s3_requests_rejected_auth_total = GetIntValue(value);
                         break;
                     case "minio_s3_requests_rejected_header_total":
-                        s3_requests_rejected_header_total=GetIntValue(value) ;
+                        s3_requests_rejected_header_total = GetIntValue(value);
                         break;
                     case "minio_s3_requests_rejected_invalid_total":
-                        s3_requests_rejected_invalid_total=GetIntValue(value) ;
+                        s3_requests_rejected_invalid_total = GetIntValue(value);
                         break;
                     case "minio_s3_requests_rejected_timestamp_total":
-                        s3_requests_rejected_timestamp_total=GetIntValue(value) ;
+                        s3_requests_rejected_timestamp_total = GetIntValue(value);
                         break;
                     case "minio_s3_requests_waiting_total":
-                        s3_requests_waiting_total=GetIntValue(value) ;
+                        s3_requests_waiting_total = GetIntValue(value);
                         break;
                     case "minio_s3_traffic_received_bytes":
-                        s3_traffic_received_bytes=GetDoubleValue(value) ;
+                        s3_traffic_received_bytes = GetDoubleValue(value);
                         break;
                     case "minio_s3_traffic_sent_bytes":
-                        s3_traffic_sent_bytes=GetDoubleValue(value) ;
+                        s3_traffic_sent_bytes = GetDoubleValue(value);
                         break;
                     // more cases can be added here
                     default:
@@ -482,7 +477,7 @@ namespace PrometheusParser
                         break;
                 }
             }
-            
+
         }
         private double GetDoubleValue(string value)
         {
@@ -526,11 +521,11 @@ namespace PrometheusParser
             {
                 Console.WriteLine($"Command failed with exit code {process.ExitCode}: {averageLoadCommand}");
             }
-            string output= process.StandardOutput.ReadToEnd();
+            string output = process.StandardOutput.ReadToEnd();
             string[] avgLoads = output.Trim().Split(',');
             avgLoad1 = GetDoubleValue(avgLoads[0].Trim());
             avgLoad5 = GetDoubleValue(avgLoads[1].Trim());
-            avgLoad15= GetDoubleValue(avgLoads[2].Trim());
+            avgLoad15 = GetDoubleValue(avgLoads[2].Trim());
 
         }
     }

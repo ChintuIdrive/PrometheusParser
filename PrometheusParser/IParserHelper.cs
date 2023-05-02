@@ -1,6 +1,6 @@
 ﻿namespace PrometheusParser
 {
-    internal interface IParserHelper
+    public interface IParserHelper
     {
         IEnumerable<string[]> GetRawMetrics(string[] lines);
     }
