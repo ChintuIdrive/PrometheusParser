@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace PrometheusParser
 {
-    internal class ParserHelper : IParserHelper
+    public class ParserHelper : IParserHelper
     {
         public IEnumerable<string[]> GetRawMetrics(string[] lines)
         {
