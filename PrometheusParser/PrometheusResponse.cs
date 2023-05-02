@@ -13,24 +13,35 @@ using System.Threading.Tasks;
 
 namespace PrometheusParser
 {
-    internal class PrometheusResponse: IPrometheusResponse
+    public class PrometheusResponse: IPrometheusResponse
     {
         private readonly IParserHelper _parserHelper;
         public PrometheusResponse(IParserHelper parserHelper)
         {
             _parserHelper= parserHelper;
+            go_gc_duration_seconds = new Dictionary<double, double>();
+            go_info = new Dictionary<string, double>();
+            s3_requests_4xx_errors_total = new Dictionary<string, int>();
+            s3_requests_5xx_errors_total = new Dictionary<string, int>();
+            s3_requests_canceled_total = new Dictionary<string, int>();
+            s3_requests_errors_total= new Dictionary<string, int>();
+            s3_requests_inflight_total = new Dictionary<string, int>();
+            s3_requests_total= new Dictionary<string, int>();
+            s3_time_ttfb_seconds_distribution = new Dictionary<Tuple<string, double>, int>();
+            software_commit_info = new Dictionary<string, int>();
+            software_version_info = new Dictionary<string, int>();
         }
         #region avgLoad
-        double avgLoad1;
-        double avgLoad5;
-        double avgLoad15;
+        public double avgLoad1;
+        public double avgLoad5;
+        public double avgLoad15;
         #endregion
 
         #region TYPE go_gc_duration_seconds summary
         /// <summary>
         /// HELP go_gc_duration_seconds A summary of the pause duration of garbage collection cycles.
         /// </summary>
-        public Dictionary<double, double> go_gc_duration_seconds { get; private set; }
+        public Dictionary<double, double> go_gc_duration_seconds { get;  set; }
 
         public double go_gc_duration_seconds_sum ;
         public int go_gc_duration_seconds_count ;
@@ -40,60 +51,60 @@ namespace PrometheusParser
         /// <summary>
         /// # HELP go_goroutines Number of goroutines that currently exist.
         /// </summary>
-        public int go_goroutines { get; private set; }
+        public int go_goroutines { get;  set; }
         #endregion
 
-        public Dictionary<string,double> go_info { get; private set; }
-        public double go_memstats_alloc_bytes { get; private set; }
-        public double go_memstats_alloc_bytes_total { get; private set; }
-        public double go_memstats_buck_hash_sys_bytes { get; private set; }
-        public double go_memstats_frees_total { get; private set; }
-        public double go_memstats_gc_sys_bytes { get; private set; }
-        public double go_memstats_heap_alloc_bytes { get; private set; }
-        public double go_memstats_heap_idle_bytes { get; private set; }
-        public double go_memstats_heap_inuse_bytes { get; private set; }
-        public int go_memstats_heap_objects { get; private set; }
-        public double go_memstats_heap_released_bytes { get; private set;}
-        public double go_memstats_heap_sys_bytes { get; private set; }
-        public double go_memstats_last_gc_time_seconds { get; private set; }
-        public double go_memstats_lookups_total { get; private set; }
-        public double go_memstats_mallocs_total { get; private set; }
-        public int go_memstats_mcache_inuse_bytes { get; private set; }
-        public int go_memstats_mcache_sys_bytes { get; private set; }
-        public double go_memstats_mspan_inuse_bytes { get; private set; }
-        public double go_memstats_mspan_sys_bytes { get; private set; }
-        public double go_memstats_next_gc_bytes { get; private set; }
-        public double go_memstats_other_sys_bytes { get; private set; }
-        public double go_memstats_stack_inuse_bytes { get; private set; }
-        public double go_memstats_stack_sys_bytes { get; private set; }
-        public double go_memstats_sys_bytes { get; private set; }
-        public int go_threads { get; private set; }
-        public int cluster_nodes_offline_total { get; private set; }
-        public int cluster_nodes_online_total { get; private set; }
-        public double process_cpu_seconds_total { get; private set; }
-        public int process_max_fds { get; private set; }
-        public int process_open_fds { get; private set; }
-        public double process_resident_memory_bytes { get; private set; }
-        public double process_start_time_seconds { get; private set; }
-        public double process_virtual_memory_bytes { get; private set; }
-        public double process_virtual_memory_max_bytes { get; private set; }
-        public Dictionary<string, int> s3_requests_4xx_errors_total { get; private set; }
-        public Dictionary<string, int> s3_requests_5xx_errors_total { get; private set; }
-        public Dictionary<string, int> s3_requests_canceled_total { get; private set; }
-        public Dictionary<string, int> s3_requests_errors_total { get; private set; }
-        public int s3_requests_incoming_total { get; private set; }
-        public Dictionary<string, int> s3_requests_inflight_total { get; private set; }
-        public int s3_requests_rejected_auth_total { get; private set; }
-        public int s3_requests_rejected_header_total { get; private set; }
-        public int s3_requests_rejected_invalid_total { get; private set; }
-        public int s3_requests_rejected_timestamp_total { get; private set; }
-        public Dictionary<string, int> s3_requests_total { get; private set; }
-        public int s3_requests_waiting_total { get; private set; }
-        public Dictionary<Tuple<string,double>, int> s3_time_ttfb_seconds_distribution { get; private set; }
-        public double s3_traffic_received_bytes { get; private set; }
-        public double s3_traffic_sent_bytes { get; private set; }
-        public Dictionary<string, int> software_commit_info { get; private set; }
-        public Dictionary<string, int> software_version_info { get; private set; }
+        public Dictionary<string,double> go_info { get { return null; }  set { } }
+        public double go_memstats_alloc_bytes { get;  set; }
+        public double go_memstats_alloc_bytes_total { get;  set; }
+        public double go_memstats_buck_hash_sys_bytes { get;  set; }
+        public double go_memstats_frees_total { get;  set; }
+        public double go_memstats_gc_sys_bytes { get;  set; }
+        public double go_memstats_heap_alloc_bytes { get;  set; }
+        public double go_memstats_heap_idle_bytes { get;  set; }
+        public double go_memstats_heap_inuse_bytes { get;  set; }
+        public int go_memstats_heap_objects { get;  set; }
+        public double go_memstats_heap_released_bytes { get;  set;}
+        public double go_memstats_heap_sys_bytes { get;  set; }
+        public double go_memstats_last_gc_time_seconds { get;  set; }
+        public double go_memstats_lookups_total { get;  set; }
+        public double go_memstats_mallocs_total { get;  set; }
+        public int go_memstats_mcache_inuse_bytes { get;  set; }
+        public int go_memstats_mcache_sys_bytes { get;  set; }
+        public double go_memstats_mspan_inuse_bytes { get;  set; }
+        public double go_memstats_mspan_sys_bytes { get;  set; }
+        public double go_memstats_next_gc_bytes { get;  set; }
+        public double go_memstats_other_sys_bytes { get;  set; }
+        public double go_memstats_stack_inuse_bytes { get;  set; }
+        public double go_memstats_stack_sys_bytes { get;  set; }
+        public double go_memstats_sys_bytes { get;  set; }
+        public int go_threads { get;  set; }
+        public int cluster_nodes_offline_total { get;  set; }
+        public int cluster_nodes_online_total { get;  set; }
+        public double process_cpu_seconds_total { get;  set; }
+        public int process_max_fds { get;  set; }
+        public int process_open_fds { get;  set; }
+        public double process_resident_memory_bytes { get;  set; }
+        public double process_start_time_seconds { get;  set; }
+        public double process_virtual_memory_bytes { get;  set; }
+        public double process_virtual_memory_max_bytes { get;  set; }
+        public Dictionary<string, int> s3_requests_4xx_errors_total { get;  set; }
+        public Dictionary<string, int> s3_requests_5xx_errors_total { get;  set; }
+        public Dictionary<string, int> s3_requests_canceled_total { get;  set; }
+        public Dictionary<string, int> s3_requests_errors_total { get;  set; }
+        public int s3_requests_incoming_total { get;  set; }
+        public Dictionary<string, int> s3_requests_inflight_total { get;  set; }
+        public int s3_requests_rejected_auth_total { get;  set; }
+        public int s3_requests_rejected_header_total { get;  set; }
+        public int s3_requests_rejected_invalid_total { get;  set; }
+        public int s3_requests_rejected_timestamp_total { get;  set; }
+        public Dictionary<string, int> s3_requests_total { get;  set; }
+        public int s3_requests_waiting_total { get;  set; }
+        public Dictionary<Tuple<string,double>, int> s3_time_ttfb_seconds_distribution { get;  set; }
+        public double s3_traffic_received_bytes { get;  set; }
+        public double s3_traffic_sent_bytes { get;  set; }
+        public Dictionary<string, int> software_commit_info { get;  set; }
+        public Dictionary<string, int> software_version_info { get;  set; }
         public void Init(string[] lines)
         {
             //initialize avg loads
@@ -145,7 +156,7 @@ namespace PrometheusParser
                 }
             }
         }      
-        private bool IsSimpleMetric(string metricLine, out Dictionary<string, string> labels)
+         bool IsSimpleMetric(string metricLine, out Dictionary<string, string> labels)
         {
             labels = new Dictionary<string, string>();
             // Split the line into metric name, labels, and value
@@ -170,14 +181,14 @@ namespace PrometheusParser
            return true;
          
         }
-        private KeyValuePair<string,string> GetKeyValuePair(string metricLine,string key)
+         KeyValuePair<string,string> GetKeyValuePair(string metricLine,string key)
         {      
             Dictionary<string, string> labels = GetLabels(metricLine);
             string valueString = metricLine.Split(" ")[1];
             string label = labels[key];
             return new KeyValuePair<string, string>(label, valueString);
         }
-        private KeyValuePair<Tuple<string,double>, int> GetKeyValuePair(string metricLine, params string[] keys)
+         KeyValuePair<Tuple<string,double>, int> GetKeyValuePair(string metricLine, params string[] keys)
         {
             Dictionary<string, string> labels = GetLabels(metricLine);
             int value = GetIntValue(metricLine.Split(" ")[1].Trim());
@@ -187,7 +198,7 @@ namespace PrometheusParser
 
             return new KeyValuePair<Tuple<string, double>, int>(Tuple.Create(apiLabel,leLabel), value);
         }
-        private Dictionary<string, string> GetLabels(string metricLine)
+         Dictionary<string, string> GetLabels(string metricLine)
         {
             Dictionary<string, string>  labels = new Dictionary<string, string>();           
             string[] parts = metricLine.Split(' ');
@@ -215,30 +226,16 @@ namespace PrometheusParser
             switch (name)
             {
                 case "go_info":
-                    go_info = new Dictionary<string, double>
-                    {
-                        { labels["version"], GetDoubleValue(value) }
-                    };
+                    go_info.Add(labels["version"], GetDoubleValue(value));                   
                     break;
                 case "s3_requests_5xx_errors_total":
-                    string key = labels["api"];
-                    int intValue = GetIntValue(value);
-                    s3_requests_5xx_errors_total = new Dictionary<string, int>() 
-                    { 
-                        { key, intValue }
-                    };
+                    s3_requests_5xx_errors_total.Add(labels["api"], GetIntValue(value));                  
                     break;
                 case "software_commit_info":
-                    software_commit_info = new Dictionary<string, int>()
-                    {
-                        {labels["commit"], GetIntValue(value)}
-                    };
+                    software_commit_info.Add(labels["commit"], GetIntValue(value));
                     break;
                 case "software_version_info":
-                    software_version_info = new Dictionary<string, int>()
-                    {
-                        { labels["version"], GetIntValue(value) }
-                    };
+                    software_version_info.Add(labels["version"],GetIntValue(value));
                     break;
                 default:
                     break;
@@ -484,7 +481,7 @@ namespace PrometheusParser
             }
             
         }
-        private double GetDoubleValue(string value)
+         double GetDoubleValue(string value)
         {
             if (double.TryParse(value, out double doubleValue))
             {
@@ -492,7 +489,7 @@ namespace PrometheusParser
             }
             return double.MinValue;
         }
-        private int GetIntValue(string value)
+         int GetIntValue(string value)
         {
             if (int.TryParse(value, out int intValue))
             {
@@ -501,7 +498,7 @@ namespace PrometheusParser
             return int.MinValue;
         }
 
-        private void InitAvgLoad()
+         void InitAvgLoad()
         {
             // Get the current system load average 
             string averageLoadCommand = "uptime | awk -F 'load average: ' '{print $2}'";

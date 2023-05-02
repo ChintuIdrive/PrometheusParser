@@ -17,14 +17,17 @@ namespace PrometheusParser
             string PromResponseFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "PromResponses", "prom_response.txt");
            
             string[] lines = File.ReadAllLines(PromResponseFilePath);
-            IParserHelper parserHelper = new ParserHelper();
-            PrometheusResponse prometheusResponse = new PrometheusResponse(parserHelper);
-            prometheusResponse.Init(lines);
-            foreach (var a in prometheusResponse.s3_requests_inflight_total)
-            {
-                Console.WriteLine(a);
-            }
-            
+
+            PrometheusBuilder builder = new PrometheusBuilder(new ParserHelper());
+            builder.Build(lines);
+            //IParserHelper parserHelper = new ParserHelper();
+            //PrometheusResponse prometheusResponse = new PrometheusResponse(parserHelper);
+            //prometheusResponse.Init(lines);
+            //foreach (var a in prometheusResponse.s3_requests_inflight_total)
+            //{
+            //    Console.WriteLine(a);
+            //}
+
         }
     }
 }

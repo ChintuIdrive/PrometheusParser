@@ -6,8 +6,8 @@ using System.Threading.Tasks;
 
 namespace PrometheusParser
 {
-    public interface IPrometheusResponse
+    internal interface IPrometheusBuilder
     {
-        void Init(string[] lines);
+        PrometheusResponse Build(string[] lines);
     }
 }
