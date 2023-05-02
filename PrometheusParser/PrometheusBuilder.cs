@@ -4,14 +4,16 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
+using System.Reactive.Joins;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace PrometheusParser
 {
-    internal class PrometheusBuilder : IPrometheusBuilder
+    public class PrometheusBuilder : IPrometheusBuilder
     {
+        private const string labelPattern = @"\{([^}]*)\}";
         private static readonly Dictionary<string, Action<PrometheusResponse, string>> metricFieldMap = new Dictionary<string, Action<PrometheusResponse, string>>
         {
             { "go_gc_duration_seconds_sum", (r, v) => r.go_gc_duration_seconds_sum = GetDoubleValue(v) },
@@ -41,61 +43,150 @@ namespace PrometheusParser
             { "go_memstats_stack_sys_bytes", (r, v) => r.go_memstats_stack_sys_bytes = GetDoubleValue(v) },
             { "go_memstats_sys_bytes", (r, v) => r.go_memstats_sys_bytes = GetDoubleValue(v) },
             { "go_threads", (r, v) => r.go_threads = GetIntValue(v) },
-            { "cluster_nodes_offline_total",(r,v )=> r.cluster_nodes_offline_total=GetIntValue(v) },
-            { "cluster_nodes_online_total",(r,v) => r.cluster_nodes_online_total=GetIntValue(v)},
-            { "process_cpu_seconds_total",(r,v)=>r.process_cpu_seconds_total=GetDoubleValue(v) },
-            { "process_max_fds", (r, v) => r.process_max_fds = GetIntValue(v) },
-            { "process_open_fds", (r, v) => r.process_open_fds = GetIntValue(v) },
-            { "process_resident_memory_bytes", (r, v) => r.process_resident_memory_bytes = GetDoubleValue(v) },
-            { "process_start_time_seconds", (r, v) => r.process_start_time_seconds = GetDoubleValue(v) },
-            { "process_virtual_memory_bytes", (r, v) => r.process_virtual_memory_bytes = GetDoubleValue(v) },
-            { "process_virtual_memory_max_bytes",(r,v)=>r.process_virtual_memory_max_bytes=GetDoubleValue(v) },
-            { "s3_requests_incoming_total",(r,v)=>r.s3_requests_incoming_total=GetIntValue(v) },
-            { "s3_requests_rejected_auth_total",(r,v)=>r.s3_requests_rejected_auth_total=GetIntValue(v) },
-            { "s3_requests_rejected_header_total",(r,v)=>r.s3_requests_rejected_header_total=GetIntValue(v) },
-            { "s3_requests_rejected_invalid_total",(r, v) => r.s3_requests_rejected_invalid_total=GetIntValue(v) },
-            { "s3_requests_rejected_timestamp_total",(r,v)=>r.s3_requests_rejected_timestamp_total = GetIntValue(v) },
-            { "s3_requests_waiting_total",(r,v)=>r.s3_requests_waiting_total = GetIntValue(v)},
-            { "s3_traffic_received_bytes",(r,v)=>r.s3_traffic_received_bytes = GetDoubleValue(v) },
-            { "s3_traffic_sent_bytes",(r,v)=>r.s3_traffic_sent_bytes=GetDoubleValue(v) }
+            { "minio_cluster_nodes_offline_total",(r,v )=> r.cluster_nodes_offline_total=GetIntValue(v) },
+            { "minio_cluster_nodes_online_total",(r,v) => r.cluster_nodes_online_total=GetIntValue(v)},
+            { "minio_process_cpu_seconds_total",(r,v)=>r.process_cpu_seconds_total=GetDoubleValue(v) },
+            { "minio_process_max_fds", (r, v) => r.process_max_fds = GetIntValue(v) },
+            { "minio_process_open_fds", (r, v) => r.process_open_fds = GetIntValue(v) },
+            { "minio_process_resident_memory_bytes", (r, v) => r.process_resident_memory_bytes = GetDoubleValue(v) },
+            { "minio_process_start_time_seconds", (r, v) => r.process_start_time_seconds = GetDoubleValue(v) },
+            { "minio_process_virtual_memory_bytes", (r, v) => r.process_virtual_memory_bytes = GetDoubleValue(v) },
+            { "minio_process_virtual_memory_max_bytes",(r,v)=>r.process_virtual_memory_max_bytes=GetDoubleValue(v) },
+            { "minio_s3_requests_incoming_total",(r,v)=>r.s3_requests_incoming_total=GetIntValue(v) },
+            { "minio_s3_requests_rejected_auth_total",(r,v)=>r.s3_requests_rejected_auth_total=GetIntValue(v) },
+            { "minio_s3_requests_rejected_header_total",(r,v)=>r.s3_requests_rejected_header_total=GetIntValue(v) },
+            { "minio_s3_requests_rejected_invalid_total",(r, v) => r.s3_requests_rejected_invalid_total=GetIntValue(v) },
+            { "minio_s3_requests_rejected_timestamp_total",(r,v)=>r.s3_requests_rejected_timestamp_total = GetIntValue(v) },
+            { "minio_s3_requests_waiting_total",(r,v)=>r.s3_requests_waiting_total = GetIntValue(v)},
+            { "minio_s3_traffic_received_bytes",(r,v)=>r.s3_traffic_received_bytes = GetDoubleValue(v) },
+            { "minio_s3_traffic_sent_bytes",(r,v)=>r.s3_traffic_sent_bytes=GetDoubleValue(v) }
         };
         private static readonly Dictionary<string, Action<PrometheusResponse, string, string>> labelMetricFieldMap = new Dictionary<string, Action<PrometheusResponse, string, string>>()
         {
              { "go_info", (r, l,v) =>
                  
                 {
-                    r.go_info.Add(l,GetDoubleValue(v));
+                    r.go_info.Add(l,GetIntValue(v));
                 }
              },
 
              {
-                "s3_requests_5xx_errors_total",(r,l,v)=>
+                "minio_s3_requests_5xx_errors_total",(r,l,v)=>
                 {
                     r.s3_requests_5xx_errors_total.Add(l,GetIntValue(v));
                 }
              },
 
              {
-                "software_commit_info",(r, l, v) =>
+                "minio_software_commit_info",(r, l, v) =>
                 {
                     r.software_commit_info.Add(l,GetIntValue(v));
                 }
              },
 
              {
-                "software_version_info",(r, l, v) =>
+                "minio_software_version_info",(r, l, v) =>
                 {
-                    r.software_version_info.Add(l,(GetIntValue(v)));
+                    r.software_version_info.Add(l,GetIntValue(v));
                 }
-             }
+             },
+
+             {
+                "go_gc_duration_seconds",
+                (r, l, v) =>
+                {
+                    double labelValue= GetDoubleValue(l);
+                    if (!r.go_gc_duration_seconds.ContainsKey(labelValue))
+                    {
+                        r.go_gc_duration_seconds.Add(labelValue, GetDoubleValue(v));
+                    }
+                }
+             },
+
+            {
+                "minio_s3_requests_4xx_errors_total",
+                (r, l, v) =>
+                {
+                    if (!r.s3_requests_4xx_errors_total.ContainsKey(l))
+                    {
+                        r.s3_requests_4xx_errors_total.Add(l, GetIntValue(v));
+                    }
+                }
+            },
+
+            {
+                "minio_s3_requests_canceled_total",
+                (r, l, v) =>
+                {
+                    if (!r.s3_requests_canceled_total.ContainsKey(l))
+                    {
+                        r.s3_requests_canceled_total.Add(l, GetIntValue(v));
+                    }
+                }
+            },
+
+            {
+                "minio_s3_requests_errors_total",
+                (r, l, v) =>
+                {
+                    if (!r.s3_requests_errors_total.ContainsKey(l))
+                    {
+                        r.s3_requests_errors_total.Add(l, GetIntValue(v));
+                    }
+                }
+            },
+
+            {
+                "minio_s3_requests_inflight_total",
+                (r, l, v) =>
+                {
+                    if (!r.s3_requests_inflight_total.ContainsKey(l))
+                    {
+                        r.s3_requests_inflight_total.Add(l, GetIntValue(v));
+                    }
+                }
+            },
+
+            {
+                "minio_s3_requests_total",
+                (r, l, v) =>
+                {
+                    if (!r.s3_requests_total.ContainsKey(l))
+                    {
+                        r.s3_requests_total.Add(l, GetIntValue(v));
+                    }
+                }
+            },
+
+             {
+                "minio_s3_time_ttfb_seconds_distribution",
+                (r, l, v) =>
+                {
+                    if (!r.s3_time_ttfb_seconds_distribution.ContainsKey(l))
+                    {
+                        r.s3_time_ttfb_seconds_distribution.Add(l, GetIntValue(v));
+                    }
+                }
+            },
         };
 
         private static readonly Dictionary<string, string> _metricLabelMap = new Dictionary<string, string>()
         {
             { "go_info", "version"},
-            { "s3_requests_5xx_errors_total", "api" },
-            { "software_commit_info", "commit" },
-            { "software_version_info", "version" }
+            { "minio_software_commit_info", "commit" },
+            { "minio_software_version_info", "version" },
+            { "go_gc_duration_seconds", "quantile"},
+            { "minio_s3_requests_4xx_errors_total","api"},
+            { "minio_s3_requests_5xx_errors_total", "api" },
+            { "minio_s3_requests_canceled_total","api"},
+            { "minio_s3_requests_errors_total","api"},
+            { "minio_s3_requests_inflight_total","api" },
+            { "minio_s3_requests_total","api"},        
+
+        };
+        private static readonly Dictionary<string, string[]> _metricMultiLabelMap = new Dictionary<string, string[]>()
+        {
+               { "minio_s3_time_ttfb_seconds_distribution",new string[]{ "api" ,"le"} }
         };
 
         private IParserHelper _parserHelper;
@@ -125,16 +216,17 @@ namespace PrometheusParser
                     if (match.Success)
                     {
                         string result = match.Groups[1].Value;
-                        Dictionary<string,string> labelst = GetLabels(result);
-                        if(labelst.Count() == 1 && labelst.ContainsKey("server"))
+                        Dictionary<string,string> labels = GetLabels(result);
+                        if(labels.Count() == 1 && labels.ContainsKey("server"))
                         {
                             BuildSimpleMetric(name, value);
                         }
                         else
                         {
-                            labelst.Remove("server");
-                            string Label = GetLabel(name);
-                            BuildSingleLabelMetric(name, Label,value);
+                            labels.Remove("server");
+                            string label = GetLabel(name);
+                            string labelValue = labels[label];
+                            BuildSingleLabelMetric(name, labelValue, value);
                         }
                     }
                     else
@@ -147,7 +239,7 @@ namespace PrometheusParser
                 {
                     if (type == "summary")
                     {
-                        //MapMetricWithMultiLabel(name, rawMetric.Skip(2).SkipLast(2).ToArray());
+                        BuildMultiLabelMetric(name, rawMetric.Skip(2).SkipLast(2).ToArray());
 
                         string sumMetricName = $"{name}_sum";
                         string sumMetricLine = rawMetric.Single(x => x.Contains(sumMetricName));
@@ -162,7 +254,7 @@ namespace PrometheusParser
                     }
                     else
                     {
-                        //MapMetricWithMultiLabel(name, rawMetric.Skip(2).ToArray());
+                        BuildMultiLabelMetric(name, rawMetric.Skip(2).ToArray());
                     }
                 }
             }
@@ -345,7 +437,35 @@ namespace PrometheusParser
         }
         private void BuildMultiLabelMetric(string name, string[] rawMetrics)
         {
-
+            foreach (string metric in rawMetrics)
+            {
+                string[] parts = metric.Split(" ");
+                Match match = Regex.Match(parts[0], labelPattern);
+                if (match.Success)
+                {
+                    string result = match.Groups[1].Value;
+                    Dictionary<string, string> labels = GetLabels(result);
+                    labels.Remove("server");
+                    if (labels.Count > 1)
+                    {
+                        string[] labelsKeys = _metricMultiLabelMap[name];
+                        List<string> labelValues = new List<string>();
+                        foreach(string key in labelsKeys)
+                        {
+                            labelValues.Add(labels[key]);
+                        }
+                        string labelValue=string.Join(":", labelValues);
+                        BuildSingleLabelMetric(name, labelValue, parts[1]);
+                    }
+                    else
+                    {
+                        string label = GetLabel(name);
+                        string labelValue = labels[label];
+                        BuildSingleLabelMetric(name, labelValue, parts[1]);
+                    }
+                    
+                }
+            }
         }
         public PrometheusResponse Build()
         {
@@ -393,27 +513,27 @@ namespace PrometheusParser
 
             return new KeyValuePair<Tuple<string, double>, int>(Tuple.Create(apiLabel, leLabel), value);
         }
-        private Dictionary<string, string> GetLabels(string metricLine)
+        private Dictionary<string, string> GetLabels(string result)
         {
             Dictionary<string, string> labels = new Dictionary<string, string>();
-            string[] parts = metricLine.Split(' ');
-            string value = parts[1];
-            string pattern = @"\{([^}]*)\}";
-            Match match = Regex.Match(metricLine, pattern);
-            if (match.Success)
-            {
-                string result = match.Groups[1].Value;
-                string[] rawlabels = result.Split(",");
+            //string[] parts = metricLine.Split(' ');
+            //string value = parts[1];
+            //string pattern = @"\{([^}]*)\}";
+            //Match match = Regex.Match(metricLine, pattern);
+            //if (match.Success)
+            //{
+                //string result = match.Groups[1].Value;
+                string[] rawlabels = result.Split(",").Select(s => s.Trim('"')).ToArray();
 
                 foreach (string label in rawlabels)
                 {
-                    string[] labelData = label.Split("=");
+                    string[] labelData = label.Split("=").Select(s => s.Trim('"')).ToArray();
                     if (!labels.ContainsKey(label))
                     {
                         labels.Add(labelData[0], labelData[1]);
                     }
                 }
-            }
+            //}
             return labels;
         }
         private static double GetDoubleValue(string value)

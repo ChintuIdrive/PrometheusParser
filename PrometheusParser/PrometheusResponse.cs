@@ -20,14 +20,14 @@ namespace PrometheusParser
         {
             _parserHelper= parserHelper;
             go_gc_duration_seconds = new Dictionary<double, double>();
-            go_info = new Dictionary<string, double>();
+            go_info = new Dictionary<string, int>();
             s3_requests_4xx_errors_total = new Dictionary<string, int>();
             s3_requests_5xx_errors_total = new Dictionary<string, int>();
             s3_requests_canceled_total = new Dictionary<string, int>();
             s3_requests_errors_total= new Dictionary<string, int>();
             s3_requests_inflight_total = new Dictionary<string, int>();
             s3_requests_total= new Dictionary<string, int>();
-            s3_time_ttfb_seconds_distribution = new Dictionary<Tuple<string, double>, int>();
+            s3_time_ttfb_seconds_distribution = new Dictionary<string, int>();
             software_commit_info = new Dictionary<string, int>();
             software_version_info = new Dictionary<string, int>();
         }
@@ -54,7 +54,7 @@ namespace PrometheusParser
         public int go_goroutines { get;  set; }
         #endregion
 
-        public Dictionary<string,double> go_info { get { return null; }  set { } }
+        public Dictionary<string,int> go_info { get; set; }
         public double go_memstats_alloc_bytes { get;  set; }
         public double go_memstats_alloc_bytes_total { get;  set; }
         public double go_memstats_buck_hash_sys_bytes { get;  set; }
@@ -100,7 +100,7 @@ namespace PrometheusParser
         public int s3_requests_rejected_timestamp_total { get;  set; }
         public Dictionary<string, int> s3_requests_total { get;  set; }
         public int s3_requests_waiting_total { get;  set; }
-        public Dictionary<Tuple<string,double>, int> s3_time_ttfb_seconds_distribution { get;  set; }
+        public Dictionary<string, int> s3_time_ttfb_seconds_distribution { get;  set; }
         public double s3_traffic_received_bytes { get;  set; }
         public double s3_traffic_sent_bytes { get;  set; }
         public Dictionary<string, int> software_commit_info { get;  set; }
@@ -188,7 +188,7 @@ namespace PrometheusParser
             string label = labels[key];
             return new KeyValuePair<string, string>(label, valueString);
         }
-         KeyValuePair<Tuple<string,double>, int> GetKeyValuePair(string metricLine, params string[] keys)
+         KeyValuePair<string, int> GetKeyValuePair(string metricLine, params string[] keys)
         {
             Dictionary<string, string> labels = GetLabels(metricLine);
             int value = GetIntValue(metricLine.Split(" ")[1].Trim());
@@ -196,7 +196,7 @@ namespace PrometheusParser
             string le = labels[keys[1]].Trim('"');
             double leLabel = GetDoubleValue(le);
 
-            return new KeyValuePair<Tuple<string, double>, int>(Tuple.Create(apiLabel,leLabel), value);
+            return new KeyValuePair<string, int>(apiLabel + ":" + leLabel, value);
         }
          Dictionary<string, string> GetLabels(string metricLine)
         {
@@ -226,7 +226,7 @@ namespace PrometheusParser
             switch (name)
             {
                 case "go_info":
-                    go_info.Add(labels["version"], GetDoubleValue(value));                   
+                    go_info.Add(labels["version"], GetIntValue(value));                   
                     break;
                 case "s3_requests_5xx_errors_total":
                     s3_requests_5xx_errors_total.Add(labels["api"], GetIntValue(value));                  
@@ -319,10 +319,10 @@ namespace PrometheusParser
                     }
                     break;
                 case "s3_time_ttfb_seconds_distribution":
-                    s3_time_ttfb_seconds_distribution = new Dictionary<Tuple<string, double>, int>();
+                    s3_time_ttfb_seconds_distribution = new Dictionary<string, int>();
                     foreach (var rawMetric in rawMetrics)
                     {
-                        KeyValuePair<Tuple<string, double>, int> keyValuePair = GetKeyValuePair(rawMetric,"api", "le");
+                        KeyValuePair<string, int> keyValuePair = GetKeyValuePair(rawMetric,"api", "le");
                         if (!s3_time_ttfb_seconds_distribution.ContainsKey(keyValuePair.Key))
                         {
                             s3_time_ttfb_seconds_distribution.Add(keyValuePair.Key, keyValuePair.Value);
