@@ -8,6 +8,7 @@ using System.Reactive.Joins;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 
 namespace PrometheusParser
 {
@@ -32,7 +33,7 @@ namespace PrometheusParser
             { "go_memstats_heap_sys_bytes", (r, v) => r.go_memstats_heap_sys_bytes = GetDoubleValue(v) },
             { "go_memstats_last_gc_time_seconds", (r, v) => r.go_memstats_last_gc_time_seconds = GetDoubleValue(v) },
             { "go_memstats_lookups_total", (r, v) => r.go_memstats_lookups_total = GetDoubleValue(v) },
-            { "go_memstats_mallocs_total", (r, v) => r.go_memstats_mallocs_total = GetIntValue(v) },
+            { "go_memstats_mallocs_total", (r, v) => r.go_memstats_mallocs_total = GetDoubleValue(v) },
             { "go_memstats_mcache_inuse_bytes", (r, v) => r.go_memstats_mcache_inuse_bytes = GetIntValue(v) },
             { "go_memstats_mcache_sys_bytes", (r, v) => r.go_memstats_mcache_sys_bytes = GetIntValue(v) },
             { "go_memstats_mspan_inuse_bytes", (r, v) => r.go_memstats_mspan_inuse_bytes = GetDoubleValue(v) },
@@ -210,48 +211,14 @@ namespace PrometheusParser
                 string type = parts[3];
                 if (rawMetric.Count() == 3)
                 {
-                    string metricLine = rawMetric[2];
-                    string value = metricLine.Split(' ')[1];
-                    string pattern = @"\{([^}]*)\}";
-                    Match match = Regex.Match(metricLine, pattern);
-                    if (match.Success)
-                    {
-                        string result = match.Groups[1].Value;
-                        Dictionary<string,string> labels = GetLabels(result);
-                        if(labels.Count() == 1 && labels.ContainsKey("server"))
-                        {
-                            BuildSimpleMetric(name, value);
-                        }
-                        else
-                        {
-                            labels.Remove("server");
-                            string label = GetLabel(name);
-                            string labelValue = labels[label];
-                            BuildSingleLabelMetric(name, labelValue, value);
-                        }
-                    }
-                    else
-                    {
-                        BuildSimpleMetric(name, value);
-                    }
-                   
+                    BuildSimpleAndSingleMetric(rawMetric, name);
+
                 }
                 else if (rawMetric.Count() > 3)
                 {
                     if (type == "summary")
                     {
-                        BuildMultiLabelMetric(name, rawMetric.Skip(2).SkipLast(2).ToArray());
-
-                        string sumMetricName = $"{name}_sum";
-                        string sumMetricLine = rawMetric.Single(x => x.Contains(sumMetricName));
-                        string sumValue = sumMetricLine.Split(' ')[1];
-                        BuildSimpleMetric(sumMetricName, sumValue);
-
-                        string countMetricName = $"{name}_count";
-                        string countMetricLine = rawMetric.Single(x => x.Contains(countMetricName));
-                        string countValue = countMetricLine.Split(" ")[1];
-                        BuildSimpleMetric(countMetricName, countValue);
-
+                        BuildSummaryMetric(name, rawMetric);
                     }
                     else
                     {
@@ -261,6 +228,46 @@ namespace PrometheusParser
             }
             BuildAvgLoad();
             return _prometheusResponse;
+        }
+        private void BuildSimpleAndSingleMetric(string[] rawMetric, string name)
+        {
+            string metricLine = rawMetric[2];
+            string value = metricLine.Split(' ')[1];
+            Match match = Regex.Match(metricLine, labelPattern);
+            if (match.Success)
+            {
+                string result = match.Groups[1].Value;
+                Dictionary<string, string> labels = GetLabels(result);
+                if (labels.Count() == 1 && labels.ContainsKey("server"))
+                {
+                    BuildSimpleMetric(name, value);
+                }
+                else
+                {
+                    labels.Remove("server");
+                    string label = _metricLabelMap[name];
+                    string labelValue = labels[label];
+                    BuildSingleLabelMetric(name, labelValue, value);
+                }
+            }
+            else
+            {
+                BuildSimpleMetric(name, value);
+            }
+        }
+        private void BuildSummaryMetric(string name,string[] rawMetrics)
+        {
+            BuildMultiLabelMetric(name, rawMetrics.Skip(2).SkipLast(2).ToArray());
+
+            string sumMetricName = $"{name}_sum";
+            string sumMetricLine = rawMetrics.Single(x => x.Contains(sumMetricName));
+            string sumValue = sumMetricLine.Split(' ')[1];
+            BuildSimpleMetric(sumMetricName, sumValue);
+
+            string countMetricName = $"{name}_count";
+            string countMetricLine = rawMetrics.Single(x => x.Contains(countMetricName));
+            string countValue = countMetricLine.Split(" ")[1];
+            BuildSimpleMetric(countMetricName, countValue);
         }
         private void BuildSimpleMetric(string name, string value)
         {
@@ -310,7 +317,7 @@ namespace PrometheusParser
                     }
                     else
                     {
-                        string label = GetLabel(name);
+                        string label = _metricLabelMap[name];
                         string labelValue = labels[label];
                         BuildSingleLabelMetric(name, labelValue, parts[1]);
                     }
@@ -381,11 +388,6 @@ namespace PrometheusParser
             _prometheusResponse.avgLoad15 = GetDoubleValue(avgLoads[2].Trim());
 
         }      
-        private string GetLabel(string name)
-        {
-            _metricLabelMap.TryGetValue(name, out var label);
-            return label;
-        }
 
     }
 }
