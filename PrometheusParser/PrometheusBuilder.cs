@@ -325,7 +325,7 @@ namespace PrometheusParser
                 }
             }
         }
-        private Dictionary<string, string> GetLabels(string result)
+        private static Dictionary<string, string> GetLabels(string result)
         {
             Dictionary<string, string> labels = new Dictionary<string, string>();  
             
