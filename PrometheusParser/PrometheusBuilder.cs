@@ -194,11 +194,12 @@ namespace PrometheusParser
         private PrometheusResponse _prometheusResponse;
         public PrometheusBuilder(IParserHelper parserHelper)
         {
-            _prometheusResponse = new PrometheusResponse(new ParserHelper());
+            _prometheusResponse = new PrometheusResponse();
             _parserHelper = parserHelper;
         }
         public PrometheusResponse Build(string[] lines)
-        {//parse prometheus response
+        {
+            //parse prometheus response
             IEnumerable<string[]> rawMetrics = _parserHelper.GetRawMetrics(lines);
             foreach (var rawMetric in rawMetrics)
             {
@@ -258,152 +259,8 @@ namespace PrometheusParser
                     }
                 }
             }
+            BuildAvgLoad();
             return _prometheusResponse;
-        }
-        private void BuildSimpleMetrics(string name, string value)
-        {
-            if (!string.IsNullOrEmpty(value))
-            {
-                switch (name)
-                {
-                    case "go_gc_duration_seconds_sum":
-                        _prometheusResponse.go_gc_duration_seconds_sum = GetDoubleValue(value);
-                        break;
-                    case "go_gc_duration_seconds_count":
-                        _prometheusResponse.go_gc_duration_seconds_count = GetIntValue(value);
-                        break;
-                    case "go_goroutines":
-                        _prometheusResponse.go_goroutines = GetIntValue(value);
-                        break;
-                    case "go_memstats_alloc_bytes":
-                        _prometheusResponse.go_memstats_alloc_bytes = GetDoubleValue(value);
-                        break;
-                    case "go_memstats_alloc_bytes_total":
-                        _prometheusResponse.go_memstats_alloc_bytes_total = GetDoubleValue(value);
-                        break;
-                    case "go_memstats_buck_hash_sys_bytes":
-                        _prometheusResponse.go_memstats_buck_hash_sys_bytes = GetDoubleValue(value);
-                        break;
-                    case "go_memstats_frees_total":
-                        _prometheusResponse.go_memstats_frees_total = GetDoubleValue(value);
-                        break;
-                    case "go_memstats_gc_sys_bytes":
-                        _prometheusResponse.go_memstats_gc_sys_bytes = GetDoubleValue(value);
-                        break;
-                    case "go_memstats_heap_alloc_bytes":
-                        _prometheusResponse.go_memstats_heap_alloc_bytes = GetDoubleValue(value);
-                        break;
-                    case "go_memstats_heap_idle_bytes":
-                        _prometheusResponse.go_memstats_heap_idle_bytes = GetDoubleValue(value);
-                        break;
-                    case "go_memstats_heap_inuse_bytes":
-                        _prometheusResponse.go_memstats_heap_inuse_bytes = GetDoubleValue(value);
-                        break;
-                    case "go_memstats_heap_objects":
-                        _prometheusResponse.go_memstats_heap_objects = GetIntValue(value);
-                        break;
-                    case "go_memstats_heap_released_bytes":
-                        _prometheusResponse.go_memstats_heap_released_bytes = GetDoubleValue(value);
-                        break;
-                    case "go_memstats_heap_sys_bytes":
-                         _prometheusResponse.go_memstats_heap_sys_bytes = GetDoubleValue(value);
-                        break;
-                    case "go_memstats_last_gc_time_seconds":
-                        _prometheusResponse.go_memstats_last_gc_time_seconds = GetDoubleValue(value);
-                        break;
-                    case "go_memstats_lookups_total":
-                        _prometheusResponse.go_memstats_lookups_total = GetDoubleValue(value);
-                        break;
-                    case "go_memstats_mallocs_total":
-                        _prometheusResponse.go_memstats_mallocs_total = GetDoubleValue(value);
-                        break;
-                    case "go_memstats_mcache_inuse_bytes":
-                        _prometheusResponse.go_memstats_mcache_inuse_bytes = GetIntValue(value);
-                        break;
-                    case "go_memstats_mcache_sys_bytes":
-                        _prometheusResponse.go_memstats_mcache_sys_bytes = GetIntValue(value);
-                        break;
-                    case "go_memstats_mspan_inuse_bytes":
-                        _prometheusResponse.go_memstats_mspan_inuse_bytes = GetDoubleValue(value);
-                        break;
-                    case "go_memstats_mspan_sys_bytes":
-                        _prometheusResponse.go_memstats_mspan_sys_bytes = GetDoubleValue(value);
-                        break;
-                    case "go_memstats_next_gc_bytes":
-                        _prometheusResponse.go_memstats_next_gc_bytes = GetDoubleValue(value);
-                        break;
-                    case "go_memstats_other_sys_bytes":
-                        _prometheusResponse.go_memstats_other_sys_bytes = GetDoubleValue(value);
-                        break;
-                    case "go_memstats_stack_inuse_bytes":
-                        _prometheusResponse.go_memstats_stack_inuse_bytes = GetDoubleValue(value);
-                        break;
-                    case "go_memstats_stack_sys_bytes":
-                        _prometheusResponse.go_memstats_stack_sys_bytes = GetDoubleValue(value);
-                        break;
-                    case "go_memstats_sys_bytes":
-                        _prometheusResponse.go_memstats_sys_bytes = GetDoubleValue(value);
-                        break;
-                    case "go_threads":
-                        _prometheusResponse.go_threads = GetIntValue(value);
-                        break;
-                    case "cluster_nodes_offline_total":
-                        _prometheusResponse.cluster_nodes_offline_total = GetIntValue(value);
-                        break;
-                    case "cluster_nodes_online_total":
-                        _prometheusResponse.cluster_nodes_online_total = GetIntValue(value);
-                        break;
-                    case "process_cpu_seconds_total":
-                        _prometheusResponse.process_cpu_seconds_total = GetDoubleValue(value);
-                        break;
-                    case "process_max_fds":
-                        _prometheusResponse.process_max_fds = GetIntValue(value);
-                        break;
-                    case "process_open_fds":
-                        _prometheusResponse.process_open_fds = GetIntValue(value);
-                        break;
-                    case "process_resident_memory_bytes":
-                        _prometheusResponse.process_resident_memory_bytes = GetDoubleValue(value);
-                        break;
-                    case "process_start_time_seconds":
-                        _prometheusResponse.process_start_time_seconds = GetDoubleValue(value);
-                        break;
-                    case "process_virtual_memory_bytes":
-                        _prometheusResponse.process_virtual_memory_bytes = GetDoubleValue(value);
-                        break;
-                    case "process_virtual_memory_max_bytes":
-                        _prometheusResponse.process_virtual_memory_max_bytes = GetDoubleValue(value);
-                        break;
-                    case "s3_requests_incoming_total":
-                        _prometheusResponse.s3_requests_incoming_total = GetIntValue(value);
-                        break;
-                    case "s3_requests_rejected_auth_total":
-                        _prometheusResponse.s3_requests_rejected_auth_total = GetIntValue(value);
-                        break;
-                    case "s3_requests_rejected_header_total":
-                        _prometheusResponse.s3_requests_rejected_header_total = GetIntValue(value);
-                        break;
-                    case "s3_requests_rejected_invalid_total":
-                        _prometheusResponse.s3_requests_rejected_invalid_total = GetIntValue(value);
-                        break;
-                    case "s3_requests_rejected_timestamp_total":
-                        _prometheusResponse.s3_requests_rejected_timestamp_total = GetIntValue(value);
-                        break;
-                    case "s3_requests_waiting_total":
-                        _prometheusResponse.s3_requests_waiting_total = GetIntValue(value);
-                        break;
-                    case "s3_traffic_received_bytes":
-                        _prometheusResponse.s3_traffic_received_bytes = GetDoubleValue(value);
-                        break;
-                    case "s3_traffic_sent_bytes":
-                        _prometheusResponse.s3_traffic_sent_bytes = GetDoubleValue(value);
-                        break;
-                    // more cases can be added here
-                    default:
-                        // Code to execute if expression doesn't match any case
-                        break;
-                }
-            }
         }
         private void BuildSimpleMetric(string name, string value)
         {
@@ -428,12 +285,6 @@ namespace PrometheusParser
             {
                 updateAction(_prometheusResponse,label, value);
             }
-        }
-        private void BuildSingleLabelMetric(string name,string rawMetric)
-        {
-            string[] parts = rawMetric.Split(' ');
-            string value = parts[1];
-
         }
         private void BuildMultiLabelMetric(string name, string[] rawMetrics)
         {
@@ -467,73 +318,19 @@ namespace PrometheusParser
                 }
             }
         }
-        public PrometheusResponse Build()
-        {
-            throw new NotImplementedException();
-        }
-        bool IsSimpleMetric(string metricLine, out Dictionary<string, string> labels)
-        {
-            labels = new Dictionary<string, string>();
-            // Split the line into metric name, labels, and value
-            string[] parts = metricLine.Split(' ');
-            string value = parts[1];
-            string pattern = @"\{([^}]*)\}";
-            Match match = Regex.Match(metricLine, pattern);
-            if (match.Success)
-            {
-                string result = match.Groups[1].Value;
-                string[] rawlabels = result.Split(",");
-                foreach (string label in rawlabels)
-                {
-                    string[] labelData = label.Split("=");
-                    if (!labels.ContainsKey(label))
-                    {
-                        labels.Add(labelData[0], labelData[1]);
-                    }
-                }
-                return labels.Count() == 1 && labels.ContainsKey("server");
-            }
-            return true;
-
-        }
-        private KeyValuePair<string, string> GetKeyValuePair(string metricLine, string key)
-        {
-            Dictionary<string, string> labels = GetLabels(metricLine);
-            string valueString = metricLine.Split(" ")[1];
-            string label = labels[key];
-            return new KeyValuePair<string, string>(label, valueString);
-        }
-        private KeyValuePair<Tuple<string, double>, int> GetKeyValuePair(string metricLine, params string[] keys)
-        {
-            Dictionary<string, string> labels = GetLabels(metricLine);
-            int value = GetIntValue(metricLine.Split(" ")[1].Trim());
-            string apiLabel = labels[keys[0]];
-            string le = labels[keys[1]].Trim('"');
-            double leLabel = GetDoubleValue(le);
-
-            return new KeyValuePair<Tuple<string, double>, int>(Tuple.Create(apiLabel, leLabel), value);
-        }
         private Dictionary<string, string> GetLabels(string result)
         {
-            Dictionary<string, string> labels = new Dictionary<string, string>();
-            //string[] parts = metricLine.Split(' ');
-            //string value = parts[1];
-            //string pattern = @"\{([^}]*)\}";
-            //Match match = Regex.Match(metricLine, pattern);
-            //if (match.Success)
-            //{
-                //string result = match.Groups[1].Value;
-                string[] rawlabels = result.Split(",").Select(s => s.Trim('"')).ToArray();
-
-                foreach (string label in rawlabels)
+            Dictionary<string, string> labels = new Dictionary<string, string>();  
+            
+            string[] rawlabels = result.Split(",").Select(s => s.Trim('"')).ToArray();
+            foreach (string label in rawlabels)
+            {
+                string[] labelData = label.Split("=").Select(s => s.Trim('"')).ToArray();
+                if (!labels.ContainsKey(label))
                 {
-                    string[] labelData = label.Split("=").Select(s => s.Trim('"')).ToArray();
-                    if (!labels.ContainsKey(label))
-                    {
-                        labels.Add(labelData[0], labelData[1]);
-                    }
+                    labels.Add(labelData[0], labelData[1]);
                 }
-            //}
+            }
             return labels;
         }
         private static double GetDoubleValue(string value)
@@ -552,7 +349,7 @@ namespace PrometheusParser
             }
             return int.MinValue;
         }
-        private void InitAvgLoad()
+        private void BuildAvgLoad()
         {
             // Get the current system load average 
             string averageLoadCommand = "uptime | awk -F 'load average: ' '{print $2}'";
