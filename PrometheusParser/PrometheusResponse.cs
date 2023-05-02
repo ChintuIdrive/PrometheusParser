@@ -220,7 +220,7 @@ namespace PrometheusParser
                         { labels["version"], GetDoubleValue(value) }
                     };
                     break;
-                case "s3_requests_5xx_errors_total":
+                case "minio_s3_requests_5xx_errors_total":
                     string key = labels["api"];
                     int intValue = GetIntValue(value);
                     s3_requests_5xx_errors_total = new Dictionary<string, int>() 
@@ -228,13 +228,13 @@ namespace PrometheusParser
                         { key, intValue }
                     };
                     break;
-                case "software_commit_info":
+                case "minio_software_commit_info":
                     software_commit_info = new Dictionary<string, int>()
                     {
                         {labels["commit"], GetIntValue(value)}
                     };
                     break;
-                case "software_version_info":
+                case "minio_software_version_info":
                     software_version_info = new Dictionary<string, int>()
                     {
                         { labels["version"], GetIntValue(value) }
@@ -261,7 +261,7 @@ namespace PrometheusParser
                         }
                     }
                     break;
-                case "s3_requests_4xx_errors_total":
+                case "minio_s3_requests_4xx_errors_total":
                     s3_requests_4xx_errors_total = new Dictionary<string, int>();
                     foreach (var rawMetric in rawMetrics)
                     {
@@ -273,7 +273,7 @@ namespace PrometheusParser
                         }                       
                     }
                     break;
-                case "s3_requests_canceled_total":
+                case "minio_s3_requests_canceled_total":
                     s3_requests_canceled_total = new Dictionary<string, int> ();
                     foreach (var rawMetric in rawMetrics)
                     {
@@ -285,7 +285,7 @@ namespace PrometheusParser
                         }
                     }                   
                     break;
-                case "s3_requests_errors_total":
+                case "minio_s3_requests_errors_total":
                     s3_requests_errors_total = new Dictionary<string, int>();
                     foreach (var rawMetric in rawMetrics)
                     {
@@ -297,7 +297,7 @@ namespace PrometheusParser
                         }
                     }
                     break;
-                case "s3_requests_inflight_total":
+                case "minio_s3_requests_inflight_total":
                     s3_requests_inflight_total = new Dictionary<string, int>();
                     foreach (var rawMetric in rawMetrics)
                     {
@@ -309,7 +309,7 @@ namespace PrometheusParser
                         }
                     }
                     break;
-                case "s3_requests_total":
+                case "minio_s3_requests_total":
                     s3_requests_total=new Dictionary<string, int>();
                     foreach (var rawMetric in rawMetrics)
                     {
@@ -321,7 +321,7 @@ namespace PrometheusParser
                         }
                     }
                     break;
-                case "s3_time_ttfb_seconds_distribution":
+                case "minio_s3_time_ttfb_seconds_distribution":
                     s3_time_ttfb_seconds_distribution = new Dictionary<Tuple<string, double>, int>();
                     foreach (var rawMetric in rawMetrics)
                     {
@@ -425,55 +425,55 @@ namespace PrometheusParser
                     case "go_threads":
                         go_threads=GetIntValue(value) ;
                         break;
-                    case "cluster_nodes_offline_total":
+                    case "minio_cluster_nodes_offline_total":
                         cluster_nodes_offline_total=GetIntValue(value) ;
                         break;
-                    case "cluster_nodes_online_total":
+                    case "minio_cluster_nodes_online_total":
                         cluster_nodes_online_total=GetIntValue(value) ;
                         break;
-                    case "process_cpu_seconds_total":
+                    case "minio_process_cpu_seconds_total":
                         process_cpu_seconds_total=GetDoubleValue(value) ;
                         break;
-                    case "process_max_fds":
+                    case "minio_process_max_fds":
                         process_max_fds=GetIntValue(value) ;
                         break;
-                    case "process_open_fds":
+                    case "minio_process_open_fds":
                         process_open_fds=GetIntValue(value) ;
                         break;
-                    case "process_resident_memory_bytes":
+                    case "minio_process_resident_memory_bytes":
                         process_resident_memory_bytes = GetDoubleValue(value);
                         break;
-                    case "process_start_time_seconds":
+                    case "minio_process_start_time_seconds":
                         process_start_time_seconds=GetDoubleValue(value) ;
                         break;
-                    case "process_virtual_memory_bytes":
+                    case "minio_process_virtual_memory_bytes":
                         process_virtual_memory_bytes=GetDoubleValue(value) ;
                         break;
-                    case "process_virtual_memory_max_bytes":
+                    case "minio_process_virtual_memory_max_bytes":
                         process_virtual_memory_max_bytes=GetDoubleValue(value) ;
                         break;
-                    case "s3_requests_incoming_total":
+                    case "minio_s3_requests_incoming_total":
                         s3_requests_incoming_total=GetIntValue(value) ;
                         break;
-                    case "s3_requests_rejected_auth_total":
+                    case "minio_s3_requests_rejected_auth_total":
                         s3_requests_rejected_auth_total=GetIntValue(value) ;
                         break;
-                    case "s3_requests_rejected_header_total":
+                    case "minio_s3_requests_rejected_header_total":
                         s3_requests_rejected_header_total=GetIntValue(value) ;
                         break;
-                    case "s3_requests_rejected_invalid_total":
+                    case "minio_s3_requests_rejected_invalid_total":
                         s3_requests_rejected_invalid_total=GetIntValue(value) ;
                         break;
-                    case "s3_requests_rejected_timestamp_total":
+                    case "minio_s3_requests_rejected_timestamp_total":
                         s3_requests_rejected_timestamp_total=GetIntValue(value) ;
                         break;
-                    case "s3_requests_waiting_total":
+                    case "minio_s3_requests_waiting_total":
                         s3_requests_waiting_total=GetIntValue(value) ;
                         break;
-                    case "s3_traffic_received_bytes":
+                    case "minio_s3_traffic_received_bytes":
                         s3_traffic_received_bytes=GetDoubleValue(value) ;
                         break;
-                    case "s3_traffic_sent_bytes":
+                    case "minio_s3_traffic_sent_bytes":
                         s3_traffic_sent_bytes=GetDoubleValue(value) ;
                         break;
                     // more cases can be added here
